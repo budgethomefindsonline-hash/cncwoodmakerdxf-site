@@ -1,0 +1,1496 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Free laser cut jigsaw puzzle generator: choose size and piece count, export SVG and DXF for plywood. By CNCWoodMakerDXF.">
+<title>CNCWoodMakerDXF — Puzzle Generator</title>
+<style>
+:root{
+  --bg:#f5efe6; --card:#fffdf9; --ink:#2b2118; --muted:#7a6a5a; --line:#e6dccd;
+  --acc:#b4561c; --acc2:#8f3f0f; --ok:#2f7d32; --warn:#a86b00; --err:#c62828;
+  --wood:#ead3ac; --r:14px;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+header.top{padding:14px 18px;background:#2b2118;color:#fbeee0;display:flex;align-items:center;gap:12px}
+header.top .logo{width:38px;height:38px;border-radius:9px;background:var(--acc);display:grid;place-items:center;font-weight:800;font-size:18px;color:#fff;flex:none}
+header.top h1{margin:0;font-size:18px;letter-spacing:.2px}
+header.top p{margin:2px 0 0;font-size:13px;color:#d9c4ad}
+.layout{display:grid;grid-template-columns:minmax(330px,420px) 1fr;grid-template-areas:"ctl pv";gap:16px;padding:16px;max-width:1500px;margin:0 auto}
+.controls{grid-area:ctl;display:flex;flex-direction:column;gap:16px;min-width:0}
+.preview-card{grid-area:pv;position:sticky;top:12px;align-self:start;min-width:0}
+@media (max-width:900px){
+  .layout{grid-template-columns:1fr;grid-template-areas:"pv" "ctl";padding:10px;gap:12px}
+  .preview-card{position:relative;top:0}
+}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;box-shadow:0 1px 2px rgba(60,40,20,.05)}
+.card h2{margin:0 0 10px;font-size:16px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted)}
+label.f span b{color:var(--ink);font-weight:600}
+input[type=number],input[type=text],select{font:inherit;font-size:16px;padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink);width:100%;min-width:0}
+input.bad{border-color:var(--err);background:#fff4f4}
+.rangeRow{display:flex;align-items:center;gap:10px}
+.rangeRow input[type=range]{flex:1;accent-color:var(--acc)}
+.rangeRow input[type=number]{width:84px;flex:none}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.mt{margin-top:10px}
+button,.btn{font:inherit;font-size:14px;border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:9px;padding:8px 12px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;justify-content:center}
+button:hover{border-color:#cdbba3}
+button.pri,.btn.pri{background:var(--acc);border-color:var(--acc);color:#fff;font-weight:600}
+button.pri:hover{background:var(--acc2)}
+button:disabled{opacity:.45;cursor:not-allowed}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff;flex-wrap:wrap}
+.seg button{border:0;border-radius:0;padding:8px 12px;background:transparent;flex:1 1 auto}
+#modeSeg{display:flex;width:100%}
+@media (max-width:560px){.seg{display:flex;width:100%}.seg button{padding:8px 6px;font-size:13px}.pv-head{flex-direction:column;align-items:stretch}}
+.seg button+button{border-left:1px solid var(--line)}
+#modeSeg{flex-wrap:nowrap}#modeSeg button{white-space:normal}
+.seg button.on{background:#2b2118;color:#fff}
+.info{background:#f8f1e6;border-radius:10px;padding:9px 11px;font-size:14px}
+.info b{font-size:15px}
+.ferr{color:var(--err);font-size:12.5px;line-height:1.3;min-height:0}
+.ferr:empty{display:none}
+.status.busy{background:#f3eee6;color:var(--muted)}
+.status{border-radius:10px;padding:9px 11px;font-size:14px;margin-top:10px}
+.status.ok{background:#eef7ee;color:#1d5e20}
+.status.err{background:#fdeeee;color:#8e1c1c}
+.status ul{margin:4px 0 0;padding-left:18px}
+.status .w{color:var(--warn)}
+.muted{color:var(--muted);font-size:13px}
+.pv-head{display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between;align-items:center;margin-bottom:10px}
+.pv-head h2{margin:0;text-align:left}
+.cvwrap{width:100%;background:repeating-conic-gradient(#efe7da 0 25%,#f7f1e8 0 50%) 0 0/18px 18px;border-radius:10px;overflow:hidden;line-height:0}
+canvas#cv{display:block;touch-action:pan-y}
+canvas#cv.grab{cursor:grab;touch-action:none}
+.legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:8px;font-size:13px;color:var(--muted)}
+.legend i{display:inline-block;width:18px;height:3px;border-radius:2px;vertical-align:middle;margin-right:5px}
+.cmp{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:8px;font-size:14px}
+.cmp input[type=range]{flex:1;min-width:120px;accent-color:var(--acc)}
+.fileBtn{position:relative;overflow:hidden}
+.fileBtn input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.sub{border-top:1px dashed var(--line);margin-top:12px;padding-top:12px}
+.sub h3{margin:0 0 8px;font-size:14px}
+.note{font-size:13px;background:#fff6e5;border:1px solid #f1dfb8;border-radius:9px;padding:7px 10px;margin-top:8px}
+.order{margin:8px 0 0;padding-left:20px;font-size:14px}
+.order li{margin:2px 0}
+.exp{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.exp button{width:100%}
+.test table{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}
+.test td{padding:4px 6px;border-top:1px solid var(--line);vertical-align:top}
+.test .scn{font-weight:700;background:#f8f1e6}
+.ok{color:var(--ok)} .bad{color:var(--err)}
+.chk{display:flex;align-items:center;gap:8px;font-size:14px}
+.chk input{width:18px;height:18px;accent-color:var(--acc)}
+.toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:#2b2118;color:#fff;padding:10px 16px;border-radius:10px;font-size:14px;z-index:9;max-width:92vw;box-shadow:0 6px 20px rgba(0,0,0,.25)}
+#svgHost{position:fixed;left:-20000px;top:0;width:10px;height:10px;overflow:hidden;opacity:0;pointer-events:none}
+</style>
+</head>
+<body>
+<header class="top">
+  <a href="index.html" style="display:inline-flex;align-items:center;padding:7px 12px;border-radius:9px;background:#1f3b2d;color:#fff;font-weight:700;text-decoration:none;font-size:13px;white-space:nowrap">← Site</a>
+  <div class="logo">CW</div>
+  <div>
+    <h1>CNCWoodMakerDXF — Puzzle Generator</h1>
+    <p>Пазлы из фанеры для лазерной резки · SVG и DXF в мм для LightBurn</p>
+  </div>
+</header>
+
+<main class="layout">
+  <!-- ПРЕДПРОСМОТР -->
+  <section class="card preview-card" id="previewCard">
+    <div class="pv-head">
+      <h2>3. Предпросмотр</h2>
+      <div class="seg" id="viewSeg">
+        <button data-v="both" class="on">Вместе</button>
+        <button data-v="engrave">Только гравировка</button>
+        <button data-v="cut">Только резка</button>
+      </div>
+    </div>
+    <div class="cmp" id="cmpRow" hidden>
+      <label class="chk"><input type="checkbox" id="cmpOn"> Сравнить оригинал и результат</label>
+      <input type="range" id="cmpSplit" min="0" max="100" value="50" aria-label="Положение разделителя">
+    </div>
+    <div class="cvwrap" id="cvwrap"><canvas id="cv"></canvas></div>
+    <div class="legend">
+      <span><i style="background:#e53935"></i>CUT_INNER — стыки</span>
+      <span><i style="background:#1e40ff"></i>CUT_OUTER — контур</span>
+      <span><i style="background:#2a1a0e"></i>ENGRAVE — гравировка</span>
+    </div>
+    <div class="muted mt" id="pvHint">Загрузите изображение, затем перетаскивайте его мышью или пальцем; колесо мыши или щипок — масштаб.</div>
+  </section>
+
+  <div class="controls">
+    <!-- 1 -->
+    <section class="card">
+      <h2>1. Размер и детали пазла</h2>
+      <div class="grid2">
+        <label class="f"><span>Ширина, мм</span><input type="number" id="pW" value="300" min="20" max="2000" step="1" inputmode="decimal"></label>
+        <label class="f"><span>Высота, мм</span><input type="number" id="pH" value="200" min="20" max="2000" step="1" inputmode="decimal"></label>
+        <label class="f"><span>Ряды</span><input type="number" id="pR" value="4" min="1" max="60" step="1" inputmode="numeric"></label>
+        <label class="f"><span>Столбцы</span><input type="number" id="pC" value="6" min="1" max="60" step="1" inputmode="numeric"></label>
+      </div>
+      <div class="info mt" id="pInfo"></div>
+      <div class="mt">
+        <label class="f"><span>Размер выступов, % от детали</span>
+          <div class="rangeRow"><input type="range" id="pTabR" min="10" max="32" step="1" value="22"><input type="number" id="pTab" min="10" max="32" step="1" value="22"></div></label>
+      </div>
+      <div class="mt">
+        <label class="f"><span>Случайность формы, %</span>
+          <div class="rangeRow"><input type="range" id="pJitR" min="0" max="10" step="0.5" value="4"><input type="number" id="pJit" min="0" max="10" step="0.5" value="4"></div></label>
+      </div>
+      <div class="grid2 mt">
+        <label class="f"><span>Скругление внешних углов, мм</span><input type="number" id="pRad" value="3" min="0" max="100" step="0.5" inputmode="decimal"></label>
+        <label class="f"><span>Мин. перемычка, мм</span><input type="number" id="pMin" value="2" min="0.5" max="10" step="0.1" inputmode="decimal"></label>
+      </div>
+      <div class="row mt">
+        <label class="f" style="flex:1"><span>Вариант формы (seed)</span><input type="number" id="pSeed" value="1" min="1" max="99999" step="1" inputmode="numeric"></label>
+        <button id="btnSeed" style="align-self:flex-end" title="Другая случайная форма замков">🎲 Перемешать</button>
+      </div>
+      <div class="status" id="pStatus"></div>
+    </section>
+
+    <!-- 2 -->
+    <section class="card">
+      <h2>2. Изображение для гравировки</h2>
+      <div class="row">
+        <label class="btn pri fileBtn">Загрузить изображение<input type="file" id="file" accept=".png,.jpg,.jpeg,.svg,image/png,image/jpeg,image/svg+xml"></label>
+        <button id="btnRemove" hidden>Убрать изображение</button>
+      </div>
+      <div class="muted mt" id="imgName">PNG, JPG или SVG. Без изображения пазл экспортируется как чистый файл резки.</div>
+
+      <div class="mt">
+        <div class="seg" id="modeSeg">
+          <button data-m="simple" class="on">Простая гравировка</button>
+          <button data-m="vector">Автоматическая векторизация</button>
+        </div>
+        <div class="note" id="modeNote" hidden></div>
+      </div>
+
+      <div class="sub" id="placeBox" hidden>
+        <h3>Положение на собранном пазле</h3>
+        <div class="row">
+          <button id="btnFit">Вписать целиком</button>
+          <button id="btnFill">Заполнить с обрезкой</button>
+          <button id="btnCenter">По центру</button>
+        </div>
+        <div class="mt"><label class="f"><span>Масштаб, % от «вписать»</span>
+          <div class="rangeRow"><input type="range" id="iScaleR" min="5" max="400" step="1" value="100"><input type="number" id="iScale" min="1" max="2000" step="1" value="100"></div></label></div>
+        <div class="grid2 mt">
+          <label class="f"><span>Центр X, мм</span><input type="number" id="iX" step="0.5" inputmode="decimal"></label>
+          <label class="f"><span>Центр Y, мм (от верха)</span><input type="number" id="iY" step="0.5" inputmode="decimal"></label>
+        </div>
+        <div class="mt"><label class="f"><span>Поворот, °</span>
+          <div class="rangeRow"><button id="btnRotL" title="−90°">⟲</button><input type="range" id="iRotR" min="-180" max="180" step="1" value="0"><input type="number" id="iRot" min="-180" max="180" step="0.5" value="0"><button id="btnRotR" title="+90°">⟳</button></div></label></div>
+      </div>
+
+      <div class="sub" id="simpleBox" hidden>
+        <h3>Простая гравировка</h3>
+        <div id="rasterOpts">
+          <label class="chk"><input type="checkbox" id="oGray" checked> Оттенки серого (полутона сохраняются)</label>
+          <label class="f mt"><span>Разрешение PNG для гравировки</span>
+            <select id="oDpi"><option value="127">127 DPI (0,2 мм)</option><option value="254" selected>254 DPI (0,1 мм) — рекомендуется</option><option value="318">318 DPI (0,08 мм)</option><option value="508">508 DPI (0,05 мм)</option></select></label>
+        </div>
+        <div id="svgOpts" hidden>
+          <label class="chk"><input type="checkbox" id="oRecolor" checked> Перекрасить SVG в чёрный (один слой ENGRAVE)</label>
+          <div class="muted mt">Исходные векторные контуры SVG сохраняются.</div>
+        </div>
+      </div>
+
+      <div class="sub" id="vecBox" hidden>
+        <h3>Автоматическая векторизация</h3>
+        <label class="f"><span>Порог чёрного / белого</span>
+          <div class="rangeRow"><input type="range" id="oThrR" min="1" max="254" value="128"><input type="number" id="oThr" min="1" max="254" value="128"></div></label>
+        <label class="chk mt"><input type="checkbox" id="oInv"> Инверсия (гравировать светлые области)</label>
+        <label class="f mt"><span>Удалять точки меньше, мм²</span>
+          <div class="rangeRow"><input type="range" id="oSpeckR" min="0" max="10" step="0.1" value="0.5"><input type="number" id="oSpeck" min="0" max="100" step="0.1" value="0.5"></div></label>
+        <div class="grid2 mt">
+          <label class="f"><span>Сглаживание</span><select id="oSmooth"><option value="0">Нет</option><option value="1" selected>Лёгкое</option><option value="2">Среднее</option><option value="3">Сильное</option></select></label>
+          <label class="f"><span>Детализация</span><select id="oVq"><option value="1000">Быстро</option><option value="1800" selected>Обычная</option><option value="2800">Высокая</option></select></label>
+        </div>
+        <div class="muted mt" id="vecStats"></div>
+      </div>
+    </section>
+
+    <!-- 4 -->
+    <section class="card">
+      <h2>4. Экспорт для LightBurn</h2>
+      <div class="exp">
+        <button class="pri" id="btnSvg">Скачать SVG</button>
+        <button class="pri" id="btnDxf">Скачать DXF</button>
+        <button id="btnCutSvg">Только резка — SVG</button>
+        <button id="btnCutDxf">Только резка — DXF</button>
+        <button id="btnPng" hidden style="grid-column:1/-1">PNG гравировки отдельно</button>
+      </div>
+      <div class="note" id="expNote"></div>
+      <div class="muted mt">Масштаб 1:1, единицы — миллиметры. Слои: <b>ENGRAVE</b> (чёрный), <b>CUT_INNER</b> (красный), <b>CUT_OUTER</b> (синий).</div>
+      <ol class="order">
+        <li><b>ENGRAVE</b> — гравировка</li>
+        <li><b>CUT_INNER</b> — внутренние стыки</li>
+        <li><b>CUT_OUTER</b> — внешний контур (последним, чтобы лист не сдвинулся)</li>
+      </ol>
+    </section>
+
+    <!-- 5 -->
+    <section class="card test">
+      <h2>5. Проверка</h2>
+      <div class="muted">Шесть сценариев на текущих параметрах: PNG-логотип → вектор, JPG-фото → полутона, пазл без изображения, SVG в углах → обрезка по скруглённому контуру, блокировка экспорта и неизменность ZIP, SVG с огромным viewBox → точная матрица. Проверяются размеры и то, что каждый стык есть в файле ровно один раз.</div>
+      <button class="mt" id="btnTest">Запустить самопроверку</button>
+      <div id="testOut"></div>
+    </section>
+  </div>
+</main>
+<div id="svgHost"></div>
+
+<script>
+'use strict';
+/* ================= Утилиты ================= */
+const $ = id => document.getElementById(id);
+const fmt = (v, d = 1) => String(Math.round(v * 10 ** d) / 10 ** d).replace('.', ',');
+const nf = v => { const r = Math.round(v * 10000) / 10000; return (Object.is(r, -0) ? 0 : r).toString(); };
+// Полная точность без экспоненты: кратчайшее точное представление double, развёрнутое в обычную десятичную запись
+function fp(v){
+  if (!isFinite(v)) return '0';
+  if (Object.is(v, -0) || v === 0) return '0';
+  const str = String(v);
+  if (!/e/i.test(str)) return str;
+  const [mant, expS] = str.toLowerCase().split('e'), exp = parseInt(expS, 10);
+  const neg = mant[0] === '-', m = neg ? mant.slice(1) : mant;
+  const [ip, fpart = ''] = m.split('.'), digits = ip + fpart;
+  const point = ip.length + exp;
+  let out;
+  if (point <= 0) out = '0.' + '0'.repeat(-point) + digits;
+  else if (point >= digits.length) out = digits + '0'.repeat(point - digits.length);
+  else out = digits.slice(0, point) + '.' + digits.slice(point);
+  return (neg ? '-' : '') + out;
+}
+const debounce = (fn, ms) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; };
+function mulberry32(a){ return function(){ a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function toast(msg, ms = 2600){ const d = document.createElement('div'); d.className = 'toast'; d.textContent = msg; document.body.appendChild(d); setTimeout(() => d.remove(), ms); }
+
+/* ================= Состояние ================= */
+const S = {
+  p: null, puzzle: null, check: null,
+  img: null,              // {kind:'raster'|'svg', el, elBlack, iw, ih, name, svg:{vb, innerColor, innerBlack, polys}}
+  place: { cx: 150, cy: 100, s: 1, rot: 0 }, fitMode: 'fit',
+  mode: 'simple', view: 'both', dragging: false,
+  opt: { gray: true, dpi: 254, recolor: true, thr: 128, inv: false, speck: 0.5, smooth: 1, vq: 1800, compare: false, split: 50 },
+  vec: null, vecDirty: false,
+};
+const V = { k: 1, ox: 0, oy: 0 }; // экранное преобразование предпросмотра
+
+/* ================= Геометрия пазла ================= */
+function bez(c, t){ const m = 1 - t, a = m*m*m, b = 3*m*m*t, d = 3*m*t*t, e = t*t*t;
+  return [a*c[0][0] + b*c[1][0] + d*c[2][0] + e*c[3][0], a*c[0][1] + b*c[1][1] + d*c[2][1] + e*c[3][1]]; }
+function flatCubs(cubs, n){ const out = [cubs[0][0]]; for (const c of cubs) for (let i = 1; i <= n; i++) out.push(bez(c, i / n)); return out; }
+
+function genPuzzle(p){
+  const { W, H, R, C } = p, pw = W / C, ph = H / R, s = Math.min(pw, ph);
+  const rnd = mulberry32(p.seed * 9973 + 17), uni = (a, b) => a + (b - a) * rnd();
+  const T = p.tab / 200 * s, j = p.jit / 100;
+  const edges = [], lines = [];
+  const nid = (gx, gy) => gy * (C + 1) + gx;
+  function line(kind, k, n, L){
+    let flip = rnd() < 0.5, e = uni(-j, j);
+    const ids = [];
+    for (let i = 0; i < n; i++){
+      const fo = flip; flip = rnd() < 0.5;
+      const a = (flip === fo ? -e : e), b = uni(-j, j), c = uni(-j, j), d = uni(-j, j); e = uni(-j, j);
+      const sg = flip ? -1 : 1, cx = L * (0.5 + b);
+      const loc = [[0,0],[0.2*L,a*s],[cx+d*s,-T+c*s],[cx-T,T+c*s],[cx-2*T-d*s,3*T+c*s],[cx+2*T-d*s,3*T+c*s],[cx+T,T+c*s],[cx+d*s,-T+c*s],[0.8*L,e*s],[L,0]];
+      const P = loc.map(([u, v]) => kind === 'h' ? [i*L + u, k*ph + sg*v] : [k*pw + sg*v, i*L + u]);
+      P[0] = kind === 'h' ? [i*L, k*ph] : [k*pw, i*L];
+      P[9] = kind === 'h' ? [(i+1)*L, k*ph] : [k*pw, (i+1)*L];
+      const cub = [[P[0],P[1],P[2],P[3]],[P[3],P[4],P[5],P[6]],[P[6],P[7],P[8],P[9]]];
+      const nodes = kind === 'h' ? [nid(i, k), nid(i+1, k)] : [nid(k, i), nid(k, i+1)];
+      edges.push({ id: edges.length, kind, line: k, idx: i, nodes, cub });
+      ids.push(edges.length - 1);
+    }
+    lines.push({ kind, k, ids });
+  }
+  for (let k = 1; k < R; k++) line('h', k, C, pw);   // горизонтальные стыки
+  for (let k = 1; k < C; k++) line('v', k, R, ph);   // вертикальные стыки
+  const border = new Set();
+  for (let gx = 0; gx <= C; gx++){ border.add(nid(gx, 0)); border.add(nid(gx, R)); }
+  for (let gy = 0; gy <= R; gy++){ border.add(nid(0, gy)); border.add(nid(C, gy)); }
+  return { W, H, R, C, pw, ph, s, T, rad: p.rad, edges, lines, border };
+}
+
+// Линии реза: каждая линия сетки — одна непрерывная кривая; каждый стык входит ровно один раз.
+// Чётные линии идут вперёд, нечётные — назад (змейка, меньше холостых перемещений).
+function cutLines(P){
+  return P.lines.map((ln, li) => {
+    let cubs = [];
+    ln.ids.forEach(id => cubs.push(...P.edges[id].cub));
+    if (li % 2) cubs = cubs.slice().reverse().map(c => [c[3], c[2], c[1], c[0]]);
+    return { kind: ln.kind, cubs, ids: ln.ids };
+  });
+}
+function outerPoly(W, H, r, n){
+  if (r <= 0) return [[0,0],[W,0],[W,H],[0,H]];
+  const pts = [];
+  const arc = (cx, cy, a0) => { for (let i = 0; i <= n; i++){ const a = a0 + Math.PI/2 * i/n; pts.push([cx + r*Math.cos(a), cy + r*Math.sin(a)]); } };
+  arc(W-r, r, -Math.PI/2); arc(W-r, H-r, 0); arc(r, H-r, Math.PI/2); arc(r, r, Math.PI);
+  return pts;
+}
+function rrPath(ctx, W, H, r){
+  ctx.beginPath();
+  if (r <= 0){ ctx.rect(0, 0, W, H); return; }
+  ctx.moveTo(r, 0); ctx.lineTo(W-r, 0); ctx.arc(W-r, r, r, -Math.PI/2, 0); ctx.lineTo(W, H-r);
+  ctx.arc(W-r, H-r, r, 0, Math.PI/2); ctx.lineTo(r, H); ctx.arc(r, H-r, r, Math.PI/2, Math.PI);
+  ctx.lineTo(0, r); ctx.arc(r, r, r, Math.PI, Math.PI*1.5); ctx.closePath();
+}
+function inRR(x, y, W, H, r){
+  if (x < 0 || y < 0 || x > W || y > H) return false;
+  if (r <= 0) return true;
+  const cx = x < r ? r : x > W - r ? W - r : x, cy = y < r ? r : y > H - r ? H - r : y;
+  return (x-cx)*(x-cx) + (y-cy)*(y-cy) <= r*r;
+}
+
+/* ---------- Проверка геометрии ---------- */
+function dPS(px, py, ax, ay, bx, by){ const dx = bx-ax, dy = by-ay, l = dx*dx + dy*dy; let t = l ? ((px-ax)*dx + (py-ay)*dy) / l : 0; t = t < 0 ? 0 : t > 1 ? 1 : t; const x = ax + t*dx - px, y = ay + t*dy - py; return Math.sqrt(x*x + y*y); }
+function orient(ax, ay, bx, by, cx, cy){ return (bx-ax)*(cy-ay) - (by-ay)*(cx-ax); }
+function dSS(ax, ay, bx, by, cx, cy, dx, dy){
+  const o1 = orient(ax,ay,bx,by,cx,cy), o2 = orient(ax,ay,bx,by,dx,dy), o3 = orient(cx,cy,dx,dy,ax,ay), o4 = orient(cx,cy,dx,dy,bx,by);
+  if (((o1 > 0 && o2 < 0) || (o1 < 0 && o2 > 0)) && ((o3 > 0 && o4 < 0) || (o3 < 0 && o4 > 0))) return 0;
+  return Math.min(dPS(ax,ay,cx,cy,dx,dy), dPS(bx,by,cx,cy,dx,dy), dPS(cx,cy,ax,ay,bx,by), dPS(dx,dy,ax,ay,bx,by));
+}
+
+function validate(P, p){
+  const errors = [], warns = [], marks = [];
+  const minB = p.minB, s = P.s;
+  const maxR = Math.min(P.pw, P.ph) / 2;
+  if (P.rad > maxR + 1e-9) errors.push({ field: 'pRad', msg: `Скругление углов ${fmt(P.rad)} мм слишком большое для детали ${fmt(P.pw)} × ${fmt(P.ph)} мм. Уменьшите «Скругление внешних углов» до ${fmt(Math.floor(maxR*10)/10)} мм или меньше.` });
+  if (s < 8) errors.push({ field: 'pR pC', msg: `Детали слишком маленькие (${fmt(P.pw)} × ${fmt(P.ph)} мм, минимум 8 мм). Уменьшите число рядов/столбцов или увеличьте размер пазла.` });
+  if (Math.max(P.pw, P.ph) / s > 2) warns.push(`Детали сильно вытянуты (${fmt(P.pw)} × ${fmt(P.ph)} мм). Подберите ряды и столбцы так, чтобы детали были ближе к квадрату.`);
+  const expected = P.R * (P.C - 1) + P.C * (P.R - 1);
+  if (P.edges.length !== expected) errors.push({ msg: 'Внутренняя ошибка: число стыков не совпадает с сеткой.' });
+
+  const NS = 16, op = outerPoly(P.W, P.H, P.rad, 12);
+  const total = P.edges.length * 3 * NS + op.length;
+  const X1 = new Float64Array(total), Y1 = new Float64Array(total), X2 = new Float64Array(total), Y2 = new Float64Array(total), ARC = new Float64Array(total), EID = new Int32Array(total);
+  let n = 0, prot = 0;
+  for (const e of P.edges){
+    const pts = flatCubs(e.cub, NS); let arc = 0;
+    const base = e.kind === 'h' ? e.line * P.ph : e.line * P.pw;
+    for (let i = 0; i < pts.length - 1; i++){
+      const a = pts[i], b = pts[i+1];
+      X1[n] = a[0]; Y1[n] = a[1]; X2[n] = b[0]; Y2[n] = b[1]; ARC[n] = arc; EID[n] = e.id;
+      arc += Math.hypot(b[0]-a[0], b[1]-a[1]); n++;
+      prot = Math.max(prot, Math.abs((e.kind === 'h' ? b[1] : b[0]) - base));
+    }
+  }
+  const OUT = P.edges.length;
+  for (let i = 0; i < op.length; i++){ const a = op[i], b = op[(i+1) % op.length]; X1[n] = a[0]; Y1[n] = a[1]; X2[n] = b[0]; Y2[n] = b[1]; ARC[n] = 0; EID[n] = OUT; n++; }
+
+  const cs = Math.max(minB, 0.5), grid = new Map();
+  const key = (gx, gy) => gx * 65536 + gy;
+  for (let i = 0; i < n; i++){
+    const x0 = Math.floor(Math.min(X1[i], X2[i]) / cs), x1 = Math.floor(Math.max(X1[i], X2[i]) / cs);
+    const y0 = Math.floor(Math.min(Y1[i], Y2[i]) / cs), y1 = Math.floor(Math.max(Y1[i], Y2[i]) / cs);
+    for (let gx = x0; gx <= x1; gx++) for (let gy = y0; gy <= y1; gy++){ const k = key(gx, gy); let l = grid.get(k); if (!l){ l = []; grid.set(k, l); } l.push(i); }
+  }
+  const rho = Math.max(1.5 * minB, 0.12 * s);
+  const nX = id => (id % (P.C + 1)) * P.pw, nY = id => Math.floor(id / (P.C + 1)) * P.ph;
+  const worst = {};
+  const stamp = new Int32Array(n).fill(-1);
+  for (let i = 0; i < n; i++){
+    const ea = EID[i];
+    const x0 = Math.floor((Math.min(X1[i], X2[i]) - minB) / cs), x1 = Math.floor((Math.max(X1[i], X2[i]) + minB) / cs);
+    const y0 = Math.floor((Math.min(Y1[i], Y2[i]) - minB) / cs), y1 = Math.floor((Math.max(Y1[i], Y2[i]) + minB) / cs);
+    for (let gx = x0; gx <= x1; gx++) for (let gy = y0; gy <= y1; gy++){
+      const l = grid.get(key(gx, gy)); if (!l) continue;
+      for (const jj of l){
+        if (jj <= i || stamp[jj] === i) continue; stamp[jj] = i;
+        const eb = EID[jj]; let type;
+        if (ea === eb){
+          if (ea === OUT) continue;
+          if (Math.abs(ARC[i] - ARC[jj]) < 3 * minB) continue;
+          type = 'pinch';
+        } else {
+          let shared;
+          if (ea === OUT || eb === OUT){ shared = P.edges[ea === OUT ? eb : ea].nodes.filter(x => P.border.has(x)); type = 'outer'; }
+          else { const B = P.edges[eb].nodes; shared = P.edges[ea].nodes.filter(x => B.includes(x)); type = 'adj'; }
+          let skip = false;
+          for (const nd of shared){ const nx = nX(nd), ny = nY(nd);
+            if (dPS(nx, ny, X1[i], Y1[i], X2[i], Y2[i]) < rho || dPS(nx, ny, X1[jj], Y1[jj], X2[jj], Y2[jj]) < rho){ skip = true; break; } }
+          if (skip) continue;
+        }
+        const d = dSS(X1[i], Y1[i], X2[i], Y2[i], X1[jj], Y1[jj], X2[jj], Y2[jj]);
+        if (d < minB){
+          const t = d < 1e-6 ? 'cross' : type;
+          if (!worst[t] || d < worst[t].d) worst[t] = { d, x: (X1[i] + X2[i]) / 2, y: (Y1[i] + Y2[i]) / 2 };
+        }
+      }
+    }
+  }
+  const at = w => `около X ${fmt(w.x)}, Y ${fmt(w.y)} мм`;
+  if (worst.cross) errors.push({ field: 'pTab pJit', msg: `Линии реза пересекаются (${at(worst.cross)}). Уменьшите «Размер выступов» или «Случайность формы».` });
+  if (worst.adj) errors.push({ field: 'pTab pJit', msg: `Выступы соседних стыков сближаются до ${fmt(worst.adj.d, 2)} мм при минимуме ${fmt(minB)} мм (${at(worst.adj)}). Уменьшите «Размер выступов» или «Случайность формы».` });
+  if (worst.outer) errors.push({ field: 'pTab' + (P.rad > 0 ? ' pRad' : ''), msg: `Выступ подходит к внешнему контуру на ${fmt(worst.outer.d, 2)} мм при минимуме ${fmt(minB)} мм (${at(worst.outer)}). Уменьшите «Размер выступов»${P.rad > 0 ? ' или «Скругление внешних углов»' : ''}.` });
+  if (worst.pinch) errors.push({ field: 'pTab pJit', msg: `Слишком узкая шейка выступа: ${fmt(worst.pinch.d, 2)} мм при минимуме ${fmt(minB)} мм (${at(worst.pinch)}). Увеличьте «Размер выступов», уменьшите «Случайность формы» или сделайте детали крупнее (меньше рядов/столбцов).` });
+  for (const k in worst) marks.push(worst[k]);
+  return { errors, warns, marks, stats: { edges: P.edges.length, expected, prot } };
+}
+
+/* ================= Параметры и UI пазла ================= */
+const FIELDS = {
+  W: ['pW', 'Ширина', 20, 2000, 'мм'], H: ['pH', 'Высота', 20, 2000, 'мм'], R: ['pR', 'Ряды', 1, 60, ''], C: ['pC', 'Столбцы', 1, 60, ''],
+  tab: ['pTab', 'Размер выступов', 10, 32, '%'], jit: ['pJit', 'Случайность формы', 0, 10, '%'], rad: ['pRad', 'Скругление углов', 0, 100, 'мм'],
+  minB: ['pMin', 'Мин. перемычка', 0.5, 10, 'мм'], seed: ['pSeed', 'Вариант формы', 1, 99999, ''],
+};
+function readParams(){
+  const p = {}, errs = [];
+  for (const k in FIELDS){
+    const [id, label, lo, hi, u] = FIELDS[k];
+    let v = parseFloat(String($(id).value).replace(',', '.'));
+    if (['R', 'C', 'seed'].includes(k)) v = Math.round(v);
+    const raw = String($(id).value).trim(), range = `от ${String(lo).replace('.', ',')} до ${hi}${u ? ' ' + u : ''}`;
+    if (raw === '' || !isFinite(v)) errs.push({ field: id, input: true, msg: `«${label}»: поле пустое или число введено неверно — введите значение ${range}.`, short: `Введите число ${range}` });
+    else if (v < lo || v > hi) errs.push({ field: id, input: true, msg: `«${label}»: ${String(v).replace('.', ',')} — вне допустимого диапазона, нужно ${range}.`, short: `Допустимо ${range}` });
+    p[k] = v;
+  }
+  if (!errs.length && p.R * p.C > 2000) errs.push({ field: 'pR pC', input: true, short: 'Не больше 2000 деталей', msg: `Слишком много деталей (${p.R * p.C}). Максимум — 2000.` });
+  return { p, errs };
+}
+// Под каждым полем параметров — место для сообщения об ошибке
+const FERR = {};
+for (const k in FIELDS){ const id = FIELDS[k][0], lab = $(id).closest('label'); const d = document.createElement('div'); d.className = 'ferr'; d.id = 'err_' + id; d.setAttribute('role', 'alert'); lab.appendChild(d); FERR[id] = d; }
+function setBad(errs){
+  document.querySelectorAll('input.bad').forEach(el => el.classList.remove('bad'));
+  for (const id in FERR) FERR[id].textContent = '';
+  errs.forEach(e => (e.field || '').split(' ').filter(Boolean).forEach(id => {
+    if (!$(id)) return;
+    $(id).classList.add('bad');
+    if (e.input && FERR[id] && !FERR[id].textContent) FERR[id].textContent = e.short || e.msg;
+  }));
+}
+// Любое изменение параметров сразу блокирует скачивание до окончания пересчёта
+function markPending(){ S.pending = true; S.check = S.check && { ...S.check }; updateExportUI(); updateStatus(); }
+function regen(){
+  S.pending = false;
+  const { p, errs } = readParams();
+  if (errs.length){ S.puzzle = null; S.check = { errors: errs, warns: [], marks: [], stats: null }; setBad(errs); updateInfo(p); updateStatus(); updateExportUI(); draw(); return; }
+  const old = S.p;
+  const sizeChanged = !old || old.W !== p.W || old.H !== p.H, radChanged = !old || old.rad !== p.rad;
+  S.p = p;
+  S.puzzle = genPuzzle(p);
+  S.check = validate(S.puzzle, p);
+  S.cut = cutLines(S.puzzle);
+  S.cutPath = buildCutPath2D();
+  setBad(S.check.errors);
+  if (S.img && sizeChanged){ if (S.fitMode === 'fit' || S.fitMode === 'fill') fitImage(S.fitMode); syncPlaceUI(); }
+  if (S.img && (sizeChanged || radChanged)) scheduleVec();
+  updateInfo(p); updateStatus(); updateExportUI(); draw();
+}
+const regenLater = debounce(regen, 120);
+const regenSoon = () => { markPending(); regenLater(); };
+function updateInfo(p){
+  const ok = p && isFinite(p.W) && isFinite(p.H) && p.R >= 1 && p.C >= 1;
+  if (!ok){ $('pInfo').innerHTML = '—'; return; }
+  const pw = p.W / p.C, ph = p.H / p.R;
+  const prot = S.check && S.check.stats ? S.check.stats.prot : 0;
+  const joints = p.R * (p.C - 1) + p.C * (p.R - 1);
+  $('pInfo').innerHTML = `Деталей: <b>${p.R * p.C}</b> (${p.R} × ${p.C}) · деталь ≈ <b>${fmt(pw)} × ${fmt(ph)} мм</b>` +
+    (prot > 0 ? `<br><span class="muted">С выступами — до ≈ ${fmt(pw + 2*prot)} × ${fmt(ph + 2*prot)} мм · выступ ≈ ${fmt(prot)} мм · стыков: ${joints}</span>` : `<br><span class="muted">Стыков: ${joints}</span>`);
+}
+function updateStatus(){
+  const c = S.check, el = $('pStatus');
+  if (!c) return;
+  let h = '';
+  if (S.pending){ el.className = 'status busy'; el.innerHTML = '⏳ Пересчёт… Скачивание заблокировано до завершения проверки.'; return; }
+  if (c.errors.length){
+    el.className = 'status err';
+    h = `<b>Экспорт заблокирован:</b><ul>${c.errors.map(e => `<li>${e.msg}</li>`).join('')}</ul>`;
+  } else {
+    el.className = 'status ok';
+    h = `✓ Геометрия в порядке: ${c.stats.edges} общих стыков, каждый формируется один раз; пересечений и перемычек тоньше ${fmt(S.p.minB)} мм нет.`;
+  }
+  if (c.warns.length) h += `<ul>${c.warns.map(w => `<li class="w">${w}</li>`).join('')}</ul>`;
+  el.innerHTML = h;
+}
+function buildCutPath2D(){
+  const inner = new Path2D();
+  for (const l of S.cut){ inner.moveTo(...l.cubs[0][0]); for (const c of l.cubs) inner.bezierCurveTo(c[1][0], c[1][1], c[2][0], c[2][1], c[3][0], c[3][1]); }
+  return { inner };
+}
+
+/* ================= Изображение ================= */
+const loadImg = src => new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = () => rej(new Error('Не удалось открыть изображение')); im.src = src; });
+function baseScale(){ return Math.min(S.p.W / S.img.iw, S.p.H / S.img.ih); }
+function fitImage(mode){
+  if (!S.img || !S.p) return;
+  S.fitMode = mode;
+  const th = S.place.rot * Math.PI / 180, c = Math.abs(Math.cos(th)), s = Math.abs(Math.sin(th));
+  const bw = S.img.iw * c + S.img.ih * s, bh = S.img.iw * s + S.img.ih * c;
+  S.place.s = mode === 'fill' ? Math.max(S.p.W / bw, S.p.H / bh) : Math.min(S.p.W / bw, S.p.H / bh);
+  S.place.cx = S.p.W / 2; S.place.cy = S.p.H / 2;
+}
+// Матрица: пиксели изображения → мм на собранном пазле (ось Y вниз, как в SVG)
+function placeMat(X = S){
+  const { cx, cy, s, rot } = X.place, th = rot * Math.PI / 180, c = Math.cos(th) * s, sn = Math.sin(th) * s;
+  const tx = -X.img.iw / 2, ty = -X.img.ih / 2;
+  return { a: c, b: sn, c: -sn, d: c, e: c*tx - sn*ty + cx, f: sn*tx + c*ty + cy };
+}
+function invMat(m){ const det = m.a*m.d - m.b*m.c; return { a: m.d/det, b: -m.b/det, c: -m.c/det, d: m.a/det, e: (m.c*m.f - m.d*m.e)/det, f: (m.b*m.e - m.a*m.f)/det }; }
+function isLogoLike(el){
+  const N = 96, c = document.createElement('canvas'); c.width = c.height = N;
+  const x = c.getContext('2d', { willReadFrequently: true }); x.drawImage(el, 0, 0, N, N);
+  const d = x.getImageData(0, 0, N, N).data; let ext = 0;
+  for (let i = 0; i < N*N; i++){ const a = d[4*i+3]; if (a < 40){ ext++; continue; } const l = 0.299*d[4*i] + 0.587*d[4*i+1] + 0.114*d[4*i+2]; if (l < 70 || l > 190) ext++; }
+  return ext / (N*N) > 0.88;
+}
+
+const GEOM = 'path,rect,circle,ellipse,line,polyline,polygon';
+function parseLen(v){
+  if (!v) return NaN; const m = String(v).trim().match(/^([\d.+-eE]+)\s*(px|mm|cm|in|pt|pc|%)?$/); if (!m) return NaN;
+  const n = parseFloat(m[1]), u = m[2] || 'px';
+  return u === '%' ? NaN : n * ({ px: 1, mm: 96/25.4, cm: 96/2.54, in: 96, pt: 96/72, pc: 16 })[u];
+}
+async function loadSvgText(txt, name){
+  const doc = new DOMParser().parseFromString(txt, 'image/svg+xml');
+  const root = doc.documentElement;
+  if (!root || root.nodeName.toLowerCase() !== 'svg' || doc.getElementsByTagName('parsererror').length) throw new Error('Не удалось прочитать SVG-файл');
+  root.querySelectorAll('script,foreignObject').forEach(n => n.remove());
+  root.querySelectorAll('*').forEach(n => [...n.attributes].forEach(a => { if (/^on/i.test(a.name)) n.removeAttribute(a.name); }));
+  const host = $('svgHost'); host.innerHTML = '';
+  let live = document.importNode(root, true); host.appendChild(live);
+  let vb = (root.getAttribute('viewBox') || '').trim().split(/[\s,]+/).map(Number);
+  if (vb.length !== 4 || vb.some(v => !isFinite(v)) || vb[2] <= 0 || vb[3] <= 0){
+    const w = parseLen(root.getAttribute('width')), h = parseLen(root.getAttribute('height'));
+    if (w > 0 && h > 0) vb = [0, 0, w, h];
+    else { const bb = live.getBBox(); vb = [bb.x, bb.y, bb.width || 100, bb.height || 100]; }
+  }
+  live.setAttribute('viewBox', vb.join(' ')); live.setAttribute('width', vb[2]); live.setAttribute('height', vb[3]);
+  live.setAttribute('preserveAspectRatio', 'none');
+  const skipSel = 'defs,clipPath,mask,symbol,marker,pattern';
+  let texts = live.querySelectorAll('text').length, rasters = live.querySelectorAll('image').length;
+  // «Запекаем» вычисленные стили в атрибуты, чтобы экспорт не зависел от CSS
+  const geoms = [...live.querySelectorAll(GEOM)];
+  for (const el of geoms){
+    const cs = getComputedStyle(el);
+    const hidden = cs.display === 'none' || cs.visibility === 'hidden' || el.closest(skipSel);
+    el.dataset.skip = hidden ? '1' : '';
+    el.setAttribute('fill', cs.fill); el.setAttribute('stroke', cs.stroke);
+    el.setAttribute('stroke-width', cs.strokeWidth); el.setAttribute('fill-rule', cs.fillRule);
+    if (parseFloat(cs.opacity) < 1) el.setAttribute('opacity', cs.opacity);
+  }
+  // Выборка контуров для DXF (в пикселях изображения 0..vb[2])
+  const diag = Math.hypot(vb[2], vb[3]), step = diag / 3000;
+  const polys = [];
+  for (const el of geoms){
+    if (el.dataset.skip === '1') continue;
+    let len = 0; try { len = el.getTotalLength(); } catch (e) { continue; }
+    if (!(len > 0)) continue;
+    const m = el.getCTM(); if (!m) continue;
+    const N = Math.min(20000, Math.max(8, Math.ceil(len / step))), st = len / N;
+    let cur = [], prev = null;
+    const closedShape = /^(rect|circle|ellipse|polygon)$/i.test(el.nodeName);
+    const flush = () => { if (cur.length > 1){ const a = cur[0], b = cur[cur.length - 1]; const closed = closedShape || Math.hypot(a[0]-b[0], a[1]-b[1]) < st * 1.5; polys.push({ pts: cur, closed }); } cur = []; };
+    for (let i = 0; i <= N; i++){
+      const q = el.getPointAtLength(Math.min(len, i * st));
+      const pt = [m.a*q.x + m.c*q.y + m.e, m.b*q.x + m.d*q.y + m.f];
+      if (prev && Math.hypot(pt[0]-prev[0], pt[1]-prev[1]) > st * Math.hypot(m.a, m.b) * 4 + 1e-9) flush();
+      cur.push(pt); prev = pt;
+    }
+    flush();
+  }
+  const ser = new XMLSerializer();
+  const colorStr = ser.serializeToString(live);
+  const black = live.cloneNode(true);
+  black.querySelectorAll('style').forEach(n => n.remove());
+  black.querySelectorAll(GEOM).forEach(el => {
+    const f = el.getAttribute('fill'), s = el.getAttribute('stroke');
+    el.setAttribute('fill', f && f !== 'none' && !/rgba\(.*,\s*0\)$/.test(f) ? '#000000' : 'none');
+    el.setAttribute('stroke', s && s !== 'none' && !/rgba\(.*,\s*0\)$/.test(s) ? '#000000' : 'none');
+    el.removeAttribute('class'); el.removeAttribute('style'); el.removeAttribute('data-skip');
+  });
+  live.querySelectorAll('[data-skip]').forEach(el => el.removeAttribute('data-skip'));
+  const blackStr = ser.serializeToString(black);
+  const inner = node => [...node.childNodes].map(c => c.nodeType === 1 ? ser.serializeToString(c) : '').join('');
+  const innerColor = inner(live), innerBlack = inner(black);
+  host.innerHTML = '';
+  const mk = s => URL.createObjectURL(new Blob([s], { type: 'image/svg+xml' }));
+  const el = await loadImg(mk(colorStr)), elBlack = await loadImg(mk(blackStr));
+  S.img = { kind: 'svg', el, elBlack, iw: vb[2], ih: vb[3], name, svg: { vb, innerColor, innerBlack, polys } };
+  const notes = ['SVG используется как готовый вектор: исходные контуры сохраняются в обоих режимах.'];
+  if (texts) notes.push(`В SVG есть текст (${texts}) — для DXF переведите его в кривые в редакторе.`);
+  if (rasters) notes.push('В SVG есть встроенные растровые картинки — они не попадут в DXF.');
+  return notes;
+}
+async function loadFile(file, opts = {}){
+  const name = file.name || 'image';
+  const isSvg = file.type === 'image/svg+xml' || /\.svg$/i.test(name);
+  let notes = [];
+  if (isSvg){ notes = await loadSvgText(await file.text(), name); }
+  else {
+    if (!/^image\/(png|jpeg)$/.test(file.type) && !/\.(png|jpe?g)$/i.test(name)) throw new Error('Поддерживаются PNG, JPG и SVG');
+    const el = await loadImg(URL.createObjectURL(file));
+    S.img = { kind: 'raster', el, iw: el.naturalWidth, ih: el.naturalHeight, name };
+    const logo = isLogoLike(el);
+    S.mode = logo ? 'vector' : 'simple';
+    notes.push(logo ? 'Режим выбран автоматически: похоже на логотип/рисунок — тёмные области переведены в векторные контуры. Можно переключить вручную.'
+                    : 'Режим выбран автоматически: похоже на фотографию — гравировка с полутонами. Можно переключить на векторизацию.');
+  }
+  S.place.rot = 0; fitImage('fit');
+  S.vec = null;
+  if (S.img.kind === 'raster' && S.mode === 'vector') vectorize();
+  if (!opts.silent){
+    $('modeNote').hidden = false; $('modeNote').innerHTML = notes.join('<br>');
+    syncAll();
+  }
+}
+
+/* ================= Векторизация ================= */
+function boxBlur(src, w, h, r){
+  const tmp = new Float32Array(w*h), out = new Float32Array(w*h), k = 2*r + 1;
+  for (let y = 0; y < h; y++){ let acc = 0; const o = y*w;
+    for (let x = -r; x <= r; x++) acc += src[o + Math.min(w-1, Math.max(0, x))];
+    for (let x = 0; x < w; x++){ tmp[o+x] = acc / k; acc += src[o + Math.min(w-1, x + r + 1)] - src[o + Math.max(0, x - r)]; } }
+  for (let x = 0; x < w; x++){ let acc = 0;
+    for (let y = -r; y <= r; y++) acc += tmp[Math.min(h-1, Math.max(0, y))*w + x];
+    for (let y = 0; y < h; y++){ out[y*w+x] = acc / k; acc += tmp[Math.min(h-1, y + r + 1)*w + x] - tmp[Math.max(0, y - r)*w + x]; } }
+  return out;
+}
+function removeSpecks(mask, w, h, minArea){
+  if (minArea < 1) return 0;
+  const lab = new Uint8Array(w*h), stack = new Int32Array(w*h), buf = new Int32Array(w*h); let removed = 0;
+  for (let i = 0; i < w*h; i++){
+    if (!mask[i] || lab[i]) continue;
+    let sp = 0, k = 0; stack[sp++] = i; lab[i] = 1;
+    while (sp){ const p = stack[--sp]; buf[k++] = p; const x = p % w;
+      if (x > 0 && mask[p-1] && !lab[p-1]){ lab[p-1] = 1; stack[sp++] = p-1; }
+      if (x < w-1 && mask[p+1] && !lab[p+1]){ lab[p+1] = 1; stack[sp++] = p+1; }
+      if (p >= w && mask[p-w] && !lab[p-w]){ lab[p-w] = 1; stack[sp++] = p-w; }
+      if (p < w*(h-1) && mask[p+w] && !lab[p+w]){ lab[p+w] = 1; stack[sp++] = p+w; } }
+    if (k < minArea){ for (let q = 0; q < k; q++) mask[buf[q]] = 0; removed++; }
+  }
+  return removed;
+}
+// Marching squares: замкнутые контуры, включая внутренние отверстия (буквы «О», «А», «В»)
+function trace(f, w, h, iso){
+  const ins = new Uint8Array(w*h); for (let i = 0; i < w*h; i++) ins[i] = f[i] > iso ? 1 : 0;
+  const A = [], B = [];
+  const add = (a, b) => { A.push(a); B.push(b); };
+  for (let y = 0; y < h-1; y++) for (let x = 0; x < w-1; x++){
+    const i = y*w + x;
+    const code = ins[i]*8 + ins[i+1]*4 + ins[i+w+1]*2 + ins[i+w];
+    if (code === 0 || code === 15) continue;
+    const T = i*2, Bt = (i+w)*2, L = i*2+1, R = (i+1)*2+1;
+    switch (code){
+      case 1: add(L, Bt); break; case 2: add(Bt, R); break; case 3: add(L, R); break; case 4: add(T, R); break;
+      case 5: if ((f[i]+f[i+1]+f[i+w]+f[i+w+1])/4 > iso){ add(L, T); add(Bt, R); } else { add(T, R); add(L, Bt); } break;
+      case 6: add(T, Bt); break; case 7: add(L, T); break; case 8: add(L, T); break; case 9: add(T, Bt); break;
+      case 10: if ((f[i]+f[i+1]+f[i+w]+f[i+w+1])/4 > iso){ add(T, R); add(L, Bt); } else { add(L, T); add(Bt, R); } break;
+      case 11: add(T, R); break; case 12: add(L, R); break; case 13: add(Bt, R); break; case 14: add(L, Bt); break;
+    }
+  }
+  const pt = k => { const idx = k >> 1, x = idx % w, y = (idx / w) | 0;
+    if (!(k & 1)){ const a = f[idx], b = f[idx+1]; return [x + (iso - a)/(b - a), y]; }
+    const a = f[idx], b = f[idx+w]; return [x, y + (iso - a)/(b - a)]; };
+  const adj = new Map();
+  for (let s = 0; s < A.length; s++){ for (const k of [A[s], B[s]]){ const l = adj.get(k); if (l) l.push(s); else adj.set(k, [s]); } }
+  const used = new Uint8Array(A.length), rings = [];
+  for (let s0 = 0; s0 < A.length; s0++){
+    if (used[s0]) continue;
+    const ring = []; let s = s0, k = A[s0]; const start = k;
+    for (let guard = 0; guard < A.length + 2; guard++){
+      used[s] = 1; ring.push(pt(k));
+      k = A[s] === k ? B[s] : A[s];
+      if (k === start) break;
+      const l = adj.get(k); const ns = l[0] === s ? l[1] : l[0];
+      if (ns === undefined || used[ns]) break;
+      s = ns;
+    }
+    if (ring.length >= 3) rings.push(ring);
+  }
+  return rings;
+}
+function rdp(pts, tol){
+  const n = pts.length; if (n < 5) return pts;
+  const keep = new Uint8Array(n); keep[0] = keep[n-1] = 1;
+  const st = [[0, n-1]];
+  while (st.length){ const [a, b] = st.pop(); let md = 0, mi = -1;
+    for (let i = a+1; i < b; i++){ const d = dPS(pts[i][0], pts[i][1], pts[a][0], pts[a][1], pts[b][0], pts[b][1]); if (d > md){ md = d; mi = i; } }
+    if (md > tol){ keep[mi] = 1; st.push([a, mi], [mi, b]); } }
+  return pts.filter((_, i) => keep[i]);
+}
+function rasterize(ppmX, ppmY, w, h, X = S){
+  const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+  const c = cv.getContext('2d', { willReadFrequently: true });
+  c.fillStyle = '#fff'; c.fillRect(0, 0, w, h);
+  c.save(); c.scale(ppmX, ppmY); rrPath(c, X.p.W, X.p.H, X.p.rad); c.clip();
+  const m = placeMat(X); c.transform(m.a, m.b, m.c, m.d, m.e, m.f);
+  c.imageSmoothingQuality = 'high';
+  c.drawImage(X.img.el, 0, 0, X.img.iw, X.img.ih); c.restore();
+  return { cv, c };
+}
+function vectorize(){
+  S.vecDirty = false;
+  if (!S.img || S.img.kind !== 'raster' || S.mode !== 'vector' || !S.p){ S.vec = null; return; }
+  const t0 = performance.now();
+  const { W, H, rad } = S.p, o = S.opt;
+  const ppm0 = Math.min(o.vq / Math.max(W, H), 12);
+  const w = Math.max(4, Math.round(W * ppm0)), h = Math.max(4, Math.round(H * ppm0));
+  const sx = W / w, sy = H / h;
+  const { c } = rasterize(1/sx, 1/sy, w, h);
+  const d = c.getImageData(0, 0, w, h).data, N = w*h;
+  let lum = new Float32Array(N);
+  for (let i = 0; i < N; i++) lum[i] = 0.299*d[4*i] + 0.587*d[4*i+1] + 0.114*d[4*i+2];
+  if (o.smooth > 0) lum = boxBlur(lum, w, h, o.smooth);
+  const inv = invMat(placeMat()), iw = S.img.iw, ih = S.img.ih;
+  const mask = new Uint8Array(N);
+  for (let y = 0; y < h; y++){ const Y = (y + 0.5) * sy;
+    for (let x = 0; x < w; x++){ const X = (x + 0.5) * sx;
+      const u = inv.a*X + inv.c*Y + inv.e, v = inv.b*X + inv.d*Y + inv.f;
+      const fp = u >= 0 && u <= iw && v >= 0 && v <= ih && inRR(X, Y, W, H, rad);
+      const i = y*w + x; mask[i] = fp && ((lum[i] < o.thr) !== o.inv) ? 1 : 0; } }
+  const removed = removeSpecks(mask, w, h, o.speck / (sx * sy));
+  const fw = w + 2, fh = h + 2; let f = new Float32Array(fw * fh);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) f[(y+1)*fw + x + 1] = mask[y*w + x];
+  f = boxBlur(f, fw, fh, 1);
+  for (let x = 0; x < fw; x++){ f[x] = 0; f[(fh-1)*fw + x] = 0; } for (let y = 0; y < fh; y++){ f[y*fw] = 0; f[y*fw + fw - 1] = 0; }
+  const raw = trace(f, fw, fh, 0.5);
+  const tol = 0.35 * Math.min(sx, sy);
+  const rings = [];
+  let pts = 0;
+  for (const r of raw){
+    const mm = r.map(([x, y]) => [Math.min(W, Math.max(0, (x - 0.5) * sx)), Math.min(H, Math.max(0, (y - 0.5) * sy))]);
+    mm.push(mm[0]); let s = rdp(mm, tol); s.pop();
+    if (s.length >= 3){ rings.push(s); pts += s.length; }
+  }
+  const path = new Path2D();
+  for (const r of rings){ path.moveTo(r[0][0], r[0][1]); for (let i = 1; i < r.length; i++) path.lineTo(r[i][0], r[i][1]); path.closePath(); }
+  S.vec = { rings, path, pts, removed, ms: performance.now() - t0, res: 1 / sx };
+}
+const scheduleVec = (() => { const run = debounce(() => { vectorize(); updateVecStats(); draw(); }, 140); return () => { if (S.img && S.img.kind === 'raster' && S.mode === 'vector'){ S.vecDirty = true; run(); } }; })();
+function updateVecStats(){
+  const v = S.vec;
+  $('vecStats').textContent = v ? `Контуров: ${v.rings.length} · точек: ${v.pts} · удалено точек-мусора: ${v.removed} · разрешение ${fmt(v.res)} пикс/мм` + (v.rings.length ? '' : ' — тёмных областей нет, измените порог или инверсию.') : '';
+}
+
+/* ================= Предпросмотр ================= */
+function draw(){ cancelAnimationFrame(draw._r); draw._r = requestAnimationFrame(drawNow); }
+function drawNow(){
+  const cv = $('cv'), wrap = $('cvwrap'), cw = wrap.clientWidth || 600;
+  const p = S.p; if (!p) return;
+  const W = p.W, H = p.H, pad = 14;
+  let k = (cw - 2*pad) / W;
+  const maxH = Math.max(260, window.innerWidth > 900 ? window.innerHeight - 190 : window.innerHeight * 0.55);
+  let ch = H * k + 2*pad; if (ch > maxH){ k = (maxH - 2*pad) / H; ch = maxH; }
+  const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+  cv.style.width = cw + 'px'; cv.style.height = ch + 'px'; cv.width = Math.round(cw * dpr); cv.height = Math.round(ch * dpr);
+  V.k = k; V.ox = (cw - W*k) / 2; V.oy = pad;
+  const ctx = cv.getContext('2d');
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, cv.width, cv.height);
+  ctx.setTransform(dpr*k, 0, 0, dpr*k, dpr*V.ox, dpr*V.oy);
+  const r = S.puzzle ? S.puzzle.rad : Math.min(p.rad || 0, W/2, H/2);
+  // заготовка
+  ctx.save(); rrPath(ctx, W, H, r); ctx.fillStyle = '#ead3ac'; ctx.shadowColor = 'rgba(60,35,10,.25)'; ctx.shadowBlur = 8; ctx.fill(); ctx.restore();
+  // гравировка
+  if (S.view !== 'cut' && S.img){
+    ctx.save(); rrPath(ctx, W, H, r); ctx.clip();
+    const m = placeMat();
+    const drawImg = (el, gray) => { ctx.save(); ctx.globalCompositeOperation = 'multiply'; if (gray) ctx.filter = 'grayscale(1)'; ctx.transform(m.a, m.b, m.c, m.d, m.e, m.f); ctx.drawImage(el, 0, 0, S.img.iw, S.img.ih); ctx.restore(); };
+    const drawVec = () => { if (S.vec){ ctx.save(); ctx.fillStyle = 'rgba(42,26,14,.92)'; ctx.fill(S.vec.path, 'evenodd'); ctx.restore(); } };
+    if (S.img.kind === 'svg') drawImg(S.opt.recolor ? S.img.elBlack : S.img.el, false);
+    else if (S.mode === 'simple') drawImg(S.img.el, S.opt.gray);
+    else if (S.dragging || S.vecDirty && !S.vec){ ctx.globalAlpha = 0.7; drawImg(S.img.el, false); }
+    else if (S.opt.compare){
+      const xs = W * S.opt.split / 100;
+      ctx.save(); ctx.beginPath(); ctx.rect(0, 0, xs, H); ctx.clip(); drawImg(S.img.el, false); ctx.restore();
+      ctx.save(); ctx.beginPath(); ctx.rect(xs, 0, W - xs, H); ctx.clip(); drawVec(); ctx.restore();
+      ctx.save(); ctx.strokeStyle = '#b4561c'; ctx.lineWidth = 2 / k; ctx.setLineDash([6/k, 4/k]); ctx.beginPath(); ctx.moveTo(xs, -pad/k); ctx.lineTo(xs, H + pad/k); ctx.stroke(); ctx.restore();
+      ctx.save(); ctx.font = `${12/k}px system-ui`; ctx.fillStyle = '#b4561c'; ctx.textBaseline = 'top';
+      ctx.fillText('оригинал', Math.max(2/k, xs - 70/k), 4/k); ctx.fillText('вектор', xs + 6/k, 4/k); ctx.restore();
+    } else drawVec();
+    ctx.restore();
+  }
+  // резка
+  if (S.view !== 'engrave' && S.puzzle){
+    ctx.save(); ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+    ctx.lineWidth = 1.4 / k; ctx.strokeStyle = '#e53935'; ctx.stroke(S.cutPath.inner);
+    rrPath(ctx, W, H, r); ctx.strokeStyle = '#1e40ff'; ctx.lineWidth = 1.6 / k; ctx.stroke();
+    ctx.restore();
+  }
+  // ошибки
+  if (S.check && S.check.marks){
+    ctx.save(); ctx.strokeStyle = '#c62828'; ctx.lineWidth = 2.5 / k;
+    for (const mk of S.check.marks){ ctx.beginPath(); ctx.arc(mk.x, mk.y, 9 / k, 0, Math.PI*2); ctx.stroke(); }
+    ctx.restore();
+  }
+  // размеры
+  ctx.save(); ctx.font = `${11/k}px system-ui`; ctx.fillStyle = '#7a6a5a'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+  ctx.fillText(`${fmt(W)} мм`, W/2, H + 2/k); ctx.restore();
+}
+
+/* ---------- Перемещение изображения на холсте ---------- */
+(function pointer(){
+  const cv = $('cv'), ptrs = new Map(); let g = null;
+  const start = () => { g = { pl: { ...S.place }, pts: [...ptrs.values()].map(p => ({ ...p })) }; };
+  cv.addEventListener('pointerdown', e => { if (!S.img) return; e.preventDefault(); cv.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY }); S.dragging = true; start(); });
+  cv.addEventListener('pointermove', e => {
+    if (!ptrs.has(e.pointerId) || !g) return;
+    ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    const pts = [...ptrs.values()];
+    if (pts.length >= 2 && g.pts.length >= 2){
+      const d0 = Math.hypot(g.pts[0].x - g.pts[1].x, g.pts[0].y - g.pts[1].y) || 1, d1 = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+      S.place.s = g.pl.s * d1 / d0;
+      S.place.cx = g.pl.cx + ((pts[0].x + pts[1].x) - (g.pts[0].x + g.pts[1].x)) / 2 / V.k;
+      S.place.cy = g.pl.cy + ((pts[0].y + pts[1].y) - (g.pts[0].y + g.pts[1].y)) / 2 / V.k;
+    } else if (pts.length === 1){
+      S.place.cx = g.pl.cx + (pts[0].x - g.pts[0].x) / V.k; S.place.cy = g.pl.cy + (pts[0].y - g.pts[0].y) / V.k;
+    }
+    S.fitMode = 'custom'; syncPlaceUI(); draw();
+  });
+  const end = e => { if (!ptrs.has(e.pointerId)) return; ptrs.delete(e.pointerId); if (ptrs.size) start(); else { S.dragging = false; g = null; scheduleVec(); draw(); } };
+  cv.addEventListener('pointerup', end); cv.addEventListener('pointercancel', end);
+  cv.addEventListener('wheel', e => { if (!S.img) return; e.preventDefault(); S.place.s *= Math.exp(-e.deltaY * 0.0012); S.fitMode = 'custom'; syncPlaceUI(); draw(); scheduleVec(); }, { passive: false });
+})();
+
+/* ================= Экспорт ================= */
+const CRC_T = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++){ let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+function crc32(u8, init = 0xFFFFFFFF){ let c = init; for (let i = 0; i < u8.length; i++) c = CRC_T[(c ^ u8[i]) & 255] ^ (c >>> 8); return c; }
+function zipStore(files){
+  const enc = new TextEncoder(), parts = [], cen = []; let off = 0;
+  const now = new Date(), dt = ((now.getFullYear() - 1980) << 25) | ((now.getMonth() + 1) << 21) | (now.getDate() << 16) | (now.getHours() << 11) | (now.getMinutes() << 5) | (now.getSeconds() >> 1);
+  for (const f of files){
+    const name = enc.encode(f.name), data = f.data, crc = (crc32(data) ^ 0xFFFFFFFF) >>> 0;
+    const lh = new DataView(new ArrayBuffer(30));
+    lh.setUint32(0, 0x04034b50, true); lh.setUint16(4, 20, true); lh.setUint16(6, 0x0800, true); lh.setUint16(8, 0, true);
+    lh.setUint32(10, dt, true); lh.setUint32(14, crc, true); lh.setUint32(18, data.length, true); lh.setUint32(22, data.length, true);
+    lh.setUint16(26, name.length, true); lh.setUint16(28, 0, true);
+    parts.push(new Uint8Array(lh.buffer), name, data);
+    const ch = new DataView(new ArrayBuffer(46));
+    ch.setUint32(0, 0x02014b50, true); ch.setUint16(4, 20, true); ch.setUint16(6, 20, true); ch.setUint16(8, 0x0800, true); ch.setUint16(10, 0, true);
+    ch.setUint32(12, dt, true); ch.setUint32(16, crc, true); ch.setUint32(20, data.length, true); ch.setUint32(24, data.length, true);
+    ch.setUint16(28, name.length, true); ch.setUint32(42, off, true);
+    cen.push(new Uint8Array(ch.buffer), name);
+    off += 30 + name.length + data.length;
+  }
+  const cenSize = cen.reduce((a, b) => a + b.length, 0);
+  const end = new DataView(new ArrayBuffer(22));
+  end.setUint32(0, 0x06054b50, true); end.setUint16(8, files.length, true); end.setUint16(10, files.length, true);
+  end.setUint32(12, cenSize, true); end.setUint32(16, off, true);
+  return new Blob([...parts, ...cen, new Uint8Array(end.buffer)], { type: 'application/zip' });
+}
+// Записывает физический размер в PNG (чанк pHYs), чтобы LightBurn открыл его сразу в мм
+function pngSetPhys(u8, ppmX, ppmY){
+  const ch = new Uint8Array(21), dv = new DataView(ch.buffer);
+  dv.setUint32(0, 9); ch.set([0x70, 0x48, 0x59, 0x73], 4);
+  dv.setUint32(8, Math.round(ppmX)); dv.setUint32(12, Math.round(ppmY)); ch[16] = 1;
+  dv.setUint32(17, (crc32(ch.subarray(4, 17)) ^ 0xFFFFFFFF) >>> 0);
+  const out = new Uint8Array(u8.length + 21); out.set(u8.subarray(0, 33)); out.set(ch, 33); out.set(u8.subarray(33), 54);
+  return out;
+}
+// Растр гравировки на всю площадь пазла: левый верхний угол PNG = левый верхний угол пазла
+function composeRaster(X = S){
+  const { W, H } = X.p; let dpi = X.opt.dpi;
+  let w = Math.round(W * dpi / 25.4), h = Math.round(H * dpi / 25.4);
+  const MAXPX = 16e6; let reduced = false;
+  if (w * h > MAXPX){ const f = Math.sqrt(MAXPX / (w * h)); w = Math.floor(w * f); h = Math.floor(h * f); reduced = true; }
+  const { cv, c } = rasterize(w / W, h / H, w, h, X);
+  if (X.opt.gray){
+    const id = c.getImageData(0, 0, w, h), d = id.data;
+    for (let i = 0; i < d.length; i += 4){ const l = Math.round(0.299*d[i] + 0.587*d[i+1] + 0.114*d[i+2]); d[i] = d[i+1] = d[i+2] = l; d[i+3] = 255; }
+    c.putImageData(id, 0, 0);
+  }
+  return { cv, w, h, dpiX: w / W * 25.4, dpiY: h / H * 25.4, reduced };
+}
+const canvasPng = cv => new Promise(res => cv.toBlob(b => b.arrayBuffer().then(a => res(new Uint8Array(a))), 'image/png'));
+async function rasterPngBytes(X = S){ const r = composeRaster(X); const u8 = await canvasPng(r.cv); return { bytes: pngSetPhys(u8, r.w / (X.p.W / 1000), r.h / (X.p.H / 1000)), r }; }
+
+function engraveKind(X = S){
+  if (!X.img) return 'none';
+  if (X.img.kind === 'svg') return 'svgvec';
+  return X.mode === 'vector' ? 'vec' : 'raster';
+}
+function ensureVec(){ if (engraveKind() === 'vec' && (!S.vec || S.vecDirty)) vectorize(); }
+// Снимок всех параметров экспорта: дальнейшие изменения в интерфейсе на него не влияют
+function snapshot(){
+  ensureVec();
+  return Object.freeze({ p: { ...S.p }, puzzle: S.puzzle, cut: S.cut, place: { ...S.place }, img: S.img, opt: { ...S.opt }, mode: S.mode, vec: S.vec });
+}
+// Граница гравировки = фактический внешний контур; дуги углов вписаны с отклонением ≤ 0,01 мм
+function clipBoundary(X = S){
+  const { W, H } = X.p, r = X.puzzle.rad;
+  if (r <= 0) return [[0, 0], [W, 0], [W, H], [0, H]];
+  const n = Math.max(8, Math.ceil((Math.PI / 2) / (2 * Math.acos(Math.max(-1, 1 - 0.01 / r)))));
+  return outerPoly(W, H, r, n);
+}
+
+function svgDoc(engrave = true, X = S){
+  const { W, H } = X.p, P = X.puzzle, r = P.rad;
+  const n3 = v => (Math.round(v * 1000) / 1000).toString();
+  let eng = '';
+  const kind = engrave ? engraveKind(X) : 'none';
+  if (kind === 'svgvec'){
+    const m = placeMat(X), vb = X.img.svg.vb;
+    eng = `<g clip-path="url(#puzzleClip)"><g transform="matrix(${[m.a, m.b, m.c, m.d, m.e, m.f].map(fp).join(' ')})"><g transform="translate(${fp(-vb[0])} ${fp(-vb[1])})">${X.opt.recolor ? X.img.svg.innerBlack : X.img.svg.innerColor}</g></g></g>`;
+  } else if (kind === 'vec'){
+    if (X === S) ensureVec();
+    const d = vecRingsClipped(X).map(rg => 'M' + rg.map(p => n3(p[0]) + ' ' + n3(p[1])).join('L') + 'Z').join('');
+    if (d) eng = `<path d="${d}" fill="#000000" fill-rule="evenodd" stroke="none"/>`;
+  } else if (kind === 'raster'){
+    const rr = composeRaster(X);
+    const url = rr.cv.toDataURL('image/png');
+    eng = `<image x="0" y="0" width="${n3(W)}" height="${n3(H)}" preserveAspectRatio="none" href="${url}" xlink:href="${url}"/>`;
+  }
+  const inner = X.cut.map(l => `<path d="M${n3(l.cubs[0][0][0])} ${n3(l.cubs[0][0][1])}` + l.cubs.map(c => `C${n3(c[1][0])} ${n3(c[1][1])} ${n3(c[2][0])} ${n3(c[2][1])} ${n3(c[3][0])} ${n3(c[3][1])}`).join('') + '"/>').join('\n    ');
+  const outer = r > 0
+    ? `M${n3(r)} 0H${n3(W - r)}A${n3(r)} ${n3(r)} 0 0 1 ${n3(W)} ${n3(r)}V${n3(H - r)}A${n3(r)} ${n3(r)} 0 0 1 ${n3(W - r)} ${n3(H)}H${n3(r)}A${n3(r)} ${n3(r)} 0 0 1 0 ${n3(H - r)}V${n3(r)}A${n3(r)} ${n3(r)} 0 0 1 ${n3(r)} 0Z`
+    : `M0 0H${n3(W)}V${n3(H)}H0Z`;
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<!-- CNCWoodMakerDXF Puzzle Generator · ${W}×${H} мм · ${P.R}×${P.C} деталей · масштаб 1:1 (1 ед. = 1 мм)
+     Порядок: 1) ENGRAVE  2) CUT_INNER  3) CUT_OUTER -->
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="${n3(W)}mm" height="${n3(H)}mm" viewBox="0 0 ${n3(W)} ${n3(H)}">
+  <defs><clipPath id="puzzleClip"><path d="${outer}"/></clipPath></defs>
+  <g id="ENGRAVE" inkscape:groupmode="layer" inkscape:label="ENGRAVE">${eng}</g>
+  <g id="CUT_INNER" inkscape:groupmode="layer" inkscape:label="CUT_INNER" fill="none" stroke="#FF0000" stroke-width="0.1">
+    ${inner}
+  </g>
+  <g id="CUT_OUTER" inkscape:groupmode="layer" inkscape:label="CUT_OUTER" fill="none" stroke="#0000FF" stroke-width="0.1">
+    <path d="${outer}"/>
+  </g>
+</svg>
+`;
+}
+
+// Отсечение замкнутого контура выпуклым многоугольником (Sutherland–Hodgman); clip — по часовой стрелке в осях SVG
+function clipPolyConvex(pts, clip){
+  let out = pts;
+  for (let e = 0; e < clip.length && out.length; e++){
+    const A = clip[e], B = clip[(e + 1) % clip.length];
+    const side = p => (B[0] - A[0]) * (p[1] - A[1]) - (B[1] - A[1]) * (p[0] - A[0]); // ≥0 — внутри
+    const cut = (p, q) => { const sp = side(p), sq = side(q), t = sp / (sp - sq); return [p[0] + t * (q[0] - p[0]), p[1] + t * (q[1] - p[1])]; };
+    const inp = out; out = [];
+    for (let i = 0; i < inp.length; i++){
+      const cur = inp[i], prev = inp[(i + inp.length - 1) % inp.length], ic = side(cur) >= 0, ip = side(prev) >= 0;
+      if (ic){ if (!ip) out.push(cut(prev, cur)); out.push(cur); } else if (ip) out.push(cut(prev, cur));
+    }
+  }
+  return out;
+}
+// Отсечение открытой линии выпуклым многоугольником (Cyrus–Beck)
+function clipLineConvex(pts, clip){
+  const res = []; let cur = [];
+  const n = clip.length;
+  for (let i = 0; i < pts.length - 1; i++){
+    const P0 = pts[i], P1 = pts[i + 1], dx = P1[0] - P0[0], dy = P1[1] - P0[1];
+    let t0 = 0, t1 = 1, ok = true;
+    for (let e = 0; e < n && ok; e++){
+      const A = clip[e], B = clip[(e + 1) % n], ex = B[0] - A[0], ey = B[1] - A[1];
+      const f0 = ex * (P0[1] - A[1]) - ey * (P0[0] - A[0]), fd = ex * dy - ey * dx; // f(t) = f0 + t·fd ≥ 0 — внутри
+      if (Math.abs(fd) < 1e-15){ if (f0 < 0) ok = false; continue; }
+      const t = -f0 / fd;
+      if (fd > 0){ if (t > t0) t0 = t; } else { if (t < t1) t1 = t; }
+      if (t0 > t1) ok = false;
+    }
+    if (!ok){ if (cur.length > 1) res.push(cur); cur = []; continue; }
+    const a = [P0[0] + t0 * dx, P0[1] + t0 * dy], b = [P0[0] + t1 * dx, P0[1] + t1 * dy];
+    if (t0 > 0 && cur.length){ if (cur.length > 1) res.push(cur); cur = []; }
+    if (!cur.length) cur.push(a);
+    cur.push(b);
+    if (t1 < 1){ if (cur.length > 1) res.push(cur); cur = []; }
+  }
+  if (cur.length > 1) res.push(cur);
+  return res;
+}
+function vecRingsClipped(X = S){
+  const clip = clipBoundary(X), out = [];
+  for (const rg of X.vec ? X.vec.rings : []){ const c = clipPolyConvex(rg, clip); if (c.length >= 3) out.push(c); }
+  return out;
+}
+function clipPolyRect(pts, W, H){
+  const planes = [[p => p[0] >= 0, (a, b) => { const t = (0 - a[0]) / (b[0] - a[0]); return [0, a[1] + t*(b[1] - a[1])]; }],
+    [p => p[0] <= W, (a, b) => { const t = (W - a[0]) / (b[0] - a[0]); return [W, a[1] + t*(b[1] - a[1])]; }],
+    [p => p[1] >= 0, (a, b) => { const t = (0 - a[1]) / (b[1] - a[1]); return [a[0] + t*(b[0] - a[0]), 0]; }],
+    [p => p[1] <= H, (a, b) => { const t = (H - a[1]) / (b[1] - a[1]); return [a[0] + t*(b[0] - a[0]), H]; }]];
+  let out = pts;
+  for (const [ins, x] of planes){ const inp = out; out = []; if (!inp.length) break;
+    for (let i = 0; i < inp.length; i++){ const cur = inp[i], prev = inp[(i + inp.length - 1) % inp.length];
+      if (ins(cur)){ if (!ins(prev)) out.push(x(prev, cur)); out.push(cur); } else if (ins(prev)) out.push(x(prev, cur)); } }
+  return out;
+}
+function clipLineRect(pts, W, H){
+  const res = []; let cur = [];
+  for (let i = 0; i < pts.length - 1; i++){
+    let [x0, y0] = pts[i], [x1, y1] = pts[i+1], t0 = 0, t1 = 1; const dx = x1 - x0, dy = y1 - y0; let ok = true;
+    for (const [p, q] of [[-dx, x0], [dx, W - x0], [-dy, y0], [dy, H - y0]]){
+      if (p === 0){ if (q < 0){ ok = false; break; } } else { const t = q / p; if (p < 0){ if (t > t1){ ok = false; break; } if (t > t0) t0 = t; } else { if (t < t0){ ok = false; break; } if (t < t1) t1 = t; } } }
+    if (!ok){ if (cur.length > 1) res.push(cur); cur = []; continue; }
+    const a = [x0 + t0*dx, y0 + t0*dy], b = [x0 + t1*dx, y0 + t1*dy];
+    if (!cur.length) cur.push(a);
+    cur.push(b);
+    if (t1 < 1){ if (cur.length > 1) res.push(cur); cur = []; }
+  }
+  if (cur.length > 1) res.push(cur);
+  return res;
+}
+function svgPolysMm(X = S){
+  const m = placeMat(X), clip = clipBoundary(X), out = [];
+  for (const pl of X.img.svg.polys){
+    let pts = pl.pts.map(([x, y]) => [m.a*x + m.c*y + m.e, m.b*x + m.d*y + m.f]);
+    if (pl.closed){
+      const a = pts[0], b = pts[pts.length - 1]; if (pts.length > 3 && Math.hypot(a[0]-b[0], a[1]-b[1]) < 1e-6) pts = pts.slice(0, -1);
+      const c = clipPolyConvex(pts, clip); if (c.length >= 3) out.push({ pts: c, closed: true });
+    } else clipLineConvex(pts, clip).forEach(p => out.push({ pts: p, closed: false }));
+  }
+  return out;
+}
+
+function dxfDoc(engrave = true, X = S){
+  const { W, H } = X.p, P = X.puzzle, r = P.rad;
+  const o = [];
+  const g = (code, val) => { o.push(String(code).padStart(3, ' '), String(val)); };
+  const LAYERS = [['CUT_INNER', 1], ['CUT_OUTER', 5], ['ENGRAVE', 7]];
+  const col = { CUT_INNER: 1, CUT_OUTER: 5, ENGRAVE: 7 };
+  g(0, 'SECTION'); g(2, 'HEADER');
+  g(9, '$ACADVER'); g(1, 'AC1009');
+  g(9, '$INSUNITS'); g(70, 4);
+  g(9, '$MEASUREMENT'); g(70, 1);
+  g(9, '$EXTMIN'); g(10, 0); g(20, 0); g(30, 0);
+  g(9, '$EXTMAX'); g(10, nf(W)); g(20, nf(H)); g(30, 0);
+  g(0, 'ENDSEC');
+  g(0, 'SECTION'); g(2, 'TABLES');
+  g(0, 'TABLE'); g(2, 'LTYPE'); g(70, 1);
+  g(0, 'LTYPE'); g(2, 'CONTINUOUS'); g(70, 0); g(3, 'Solid line'); g(72, 65); g(73, 0); g(40, 0);
+  g(0, 'ENDTAB');
+  g(0, 'TABLE'); g(2, 'LAYER'); g(70, LAYERS.length + 1);
+  g(0, 'LAYER'); g(2, '0'); g(70, 0); g(62, 7); g(6, 'CONTINUOUS');
+  for (const [n, c] of LAYERS){ g(0, 'LAYER'); g(2, n); g(70, 0); g(62, c); g(6, 'CONTINUOUS'); }
+  g(0, 'ENDTAB');
+  g(0, 'ENDSEC');
+  g(0, 'SECTION'); g(2, 'ENTITIES');
+  // DXF: ось Y вверх → y' = H − y. Начало координат — левый нижний угол пазла.
+  const poly = (layer, pts, closed, bulges) => {
+    g(0, 'POLYLINE'); g(8, layer); g(62, col[layer]); g(66, 1); g(10, 0); g(20, 0); g(30, 0); g(70, closed ? 1 : 0);
+    pts.forEach((p, i) => { g(0, 'VERTEX'); g(8, layer); g(10, nf(p[0])); g(20, nf(p[1])); g(30, 0); if (bulges && bulges[i]) g(42, nf(bulges[i])); });
+    g(0, 'SEQEND'); g(8, layer);
+  };
+  const flipY = pts => pts.map(p => [p[0], H - p[1]]);
+  // 1) ENGRAVE
+  const kind = engrave ? engraveKind(X) : 'none';
+  if (kind === 'vec'){ if (X === S) ensureVec(); for (const rg of vecRingsClipped(X)) poly('ENGRAVE', flipY(rg), true); }
+  else if (kind === 'svgvec'){ for (const pl of svgPolysMm(X)){ let pts = pl.pts; if (pl.closed && pts.length > 2){ const a = pts[0], b = pts[pts.length - 1]; if (Math.hypot(a[0]-b[0], a[1]-b[1]) < 1e-6) pts = pts.slice(0, -1); } poly('ENGRAVE', flipY(pts), pl.closed); } }
+  // 2) CUT_INNER — каждая линия сетки одной полилинией, каждый стык один раз
+  for (const l of X.cut) poly('CUT_INNER', flipY(flatCubs(l.cubs, 24)), false);
+  // 3) CUT_OUTER — точные дуги через bulge
+  if (r > 0){
+    const b = Math.tan(Math.PI / 8);
+    poly('CUT_OUTER', [[r, 0], [W - r, 0], [W, r], [W, H - r], [W - r, H], [r, H], [0, H - r], [0, r]], true, [0, b, 0, b, 0, b, 0, b]);
+  } else poly('CUT_OUTER', [[0, 0], [W, 0], [W, H], [0, H]], true);
+  g(0, 'ENDSEC'); g(0, 'EOF');
+  return o.join('\r\n') + '\r\n';
+}
+function readmeText(r, X = S){
+  const { W, H } = X.p, P = X.puzzle;
+  return [
+    'CNCWoodMakerDXF — Puzzle Generator',
+    '==================================',
+    `Пазл: ${nf(W)} × ${nf(H)} мм, ${P.R} × ${P.C} = ${P.R * P.C} деталей, масштаб 1:1, единицы — мм.`,
+    '',
+    'Файлы комплекта:',
+    `  puzzle.dxf  — линии реза (слои CUT_INNER и CUT_OUTER), начало координат — левый нижний угол пазла (0; 0).`,
+    `  engrave.png — растровая гравировка ${r.w} × ${r.h} пикс., ${fmt(r.dpiX, 1)} DPI.`,
+    '',
+    'Физический размер и позиция PNG:',
+    `  Ширина ${nf(W)} мм, высота ${nf(H)} мм (размер записан в PNG, LightBurn откроет его в этом размере).`,
+    `  Левый нижний угол PNG: X = 0 мм, Y = 0 мм. Правый верхний: X = ${nf(W)} мм, Y = ${nf(H)} мм.`,
+    '  PNG покрывает ровно ту же область, что и внешний контур CUT_OUTER.',
+    '',
+    'Совмещение в LightBurn:',
+    '  1. Импортируйте puzzle.dxf и engrave.png (File → Import).',
+    `  2. Проверьте размер картинки: ${nf(W)} × ${nf(H)} мм (при необходимости задайте в полях Width/Height).`,
+    '  3. Выделите картинку и внешний контур → Arrange → Align → Align Centers.',
+    '     Либо задайте картинке позицию X = 0, Y = 0 с привязкой к левому нижнему углу.',
+    '',
+    'Порядок работы:',
+    '  1) ENGRAVE   — гравировка (Image)',
+    '  2) CUT_INNER — внутренние стыки деталей (Line)',
+    '  3) CUT_OUTER — внешний контур (Line), последним',
+    '',
+    'Каждый общий стык соседних деталей записан в файле один раз — лазер не проходит по нему дважды.',
+  ].join('\r\n');
+}
+function baseName(X = S){ const p = X.p; return `puzzle_${nf(p.W)}x${nf(p.H)}mm_${p.R}x${p.C}`; }
+function download(name, data, type){
+  const blob = data instanceof Blob ? data : new Blob([data], { type });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000);
+}
+// Комплект DXF + PNG целиком строится из одного снимка параметров X
+async function dxfKit(X){
+  const enc = new TextEncoder();
+  const dxf = enc.encode(dxfDoc(false, X));          // синхронно, до любого ожидания
+  const { bytes, r } = await rasterPngBytes(X);      // PNG из того же снимка
+  return { blob: zipStore([{ name: 'puzzle.dxf', data: dxf }, { name: 'engrave.png', data: bytes }, { name: 'README.txt', data: enc.encode('\ufeff' + readmeText(r, X)) }]), r, X };
+}
+function paramsInSync(){
+  if (!S.p) return false;
+  const { p, errs } = readParams();
+  return !errs.length && Object.keys(FIELDS).every(k => p[k] === S.p[k]);
+}
+function canExport(){ return !!(S.puzzle && S.check && !S.check.errors.length && !S.pending && !S.exporting && paramsInSync()); }
+function updateExportUI(){
+  const ok = canExport(), k = engraveKind();
+  ['btnSvg', 'btnDxf', 'btnCutSvg', 'btnCutDxf', 'btnPng'].forEach(id => { $(id).disabled = !ok; });
+  $('btnPng').hidden = k !== 'raster';
+  $('btnDxf').textContent = k === 'raster' ? 'Скачать DXF + PNG (ZIP)' : 'Скачать DXF';
+  const notes = {
+    none: 'Изображения нет — файлы содержат только линии реза.',
+    raster: 'Простая гравировка: SVG содержит изображение с полутонами. DXF не хранит растр, поэтому скачивается комплект DXF + PNG + README с физическим размером и позицией PNG (совпадает с внешним контуром).',
+    vec: 'Векторизация: контуры гравировки (с отверстиями в буквах) лежат на слое ENGRAVE в SVG и DXF.',
+    svgvec: 'SVG-вектор: в SVG сохраняются исходные контуры, в DXF — те же контуры полилиниями на слое ENGRAVE.',
+  };
+  $('expNote').innerHTML = ok ? notes[k]
+    : S.exporting ? '⏳ Формирую файлы…'
+    : S.pending ? '⏳ Пересчёт параметров — скачивание временно заблокировано.'
+    : '<span class="bad">Экспорт заблокирован — исправьте параметры в разделе 1.</span>';
+}
+
+/* ================= Синхронизация UI ================= */
+function syncPlaceUI(){
+  if (!S.img) return;
+  const pct = S.place.s / baseScale() * 100;
+  $('iScale').value = Math.round(pct); $('iScaleR').value = Math.min(400, Math.max(5, Math.round(pct)));
+  $('iX').value = Math.round(S.place.cx * 10) / 10; $('iY').value = Math.round(S.place.cy * 10) / 10;
+  $('iRot').value = Math.round(S.place.rot * 10) / 10; $('iRotR').value = Math.round(S.place.rot);
+}
+function syncAll(){
+  const has = !!S.img, svg = has && S.img.kind === 'svg';
+  $('btnRemove').hidden = !has;
+  $('imgName').textContent = has ? `${S.img.name} · ${Math.round(S.img.iw)} × ${Math.round(S.img.ih)}${svg ? ' (SVG)' : ' пикс.'}` : 'PNG, JPG или SVG. Без изображения пазл экспортируется как чистый файл резки.';
+  if (!has) $('modeNote').hidden = true;
+  $('placeBox').hidden = !has;
+  document.querySelectorAll('#modeSeg button').forEach(b => b.classList.toggle('on', b.dataset.m === S.mode));
+  $('simpleBox').hidden = !has || (S.mode !== 'simple' && !svg);
+  $('rasterOpts').hidden = svg; $('svgOpts').hidden = !svg;
+  $('vecBox').hidden = !has || S.mode !== 'vector' || svg;
+  $('cmpRow').hidden = !(has && !svg && S.mode === 'vector');
+  $('cv').classList.toggle('grab', has);
+  syncPlaceUI(); updateVecStats(); updateExportUI(); draw();
+}
+
+/* ================= Обработчики ================= */
+function bindPair(rangeId, numId, onVal, always = false){
+  $(rangeId).addEventListener('input', () => { $(numId).value = $(rangeId).value; onVal(parseFloat($(rangeId).value)); });
+  $(numId).addEventListener('input', () => { const v = parseFloat(String($(numId).value).replace(',', '.')); if (isFinite(v)){ $(rangeId).value = v; onVal(v); } else if (always) onVal(NaN); });
+}
+['pW', 'pH', 'pR', 'pC', 'pRad', 'pMin', 'pSeed'].forEach(id => $(id).addEventListener('input', regenSoon));
+bindPair('pTabR', 'pTab', regenSoon, true); bindPair('pJitR', 'pJit', regenSoon, true);
+['pW', 'pH', 'pR', 'pC', 'pRad', 'pMin', 'pSeed', 'pTab', 'pJit'].forEach(id => $(id).addEventListener('change', regenSoon));
+$('btnSeed').onclick = () => { $('pSeed').value = 1 + Math.floor(Math.random() * 99998); markPending(); regen(); };
+
+$('file').addEventListener('change', async e => {
+  const f = e.target.files[0]; e.target.value = '';
+  if (!f) return;
+  try { await loadFile(f); toast('Изображение вписано в пазл'); }
+  catch (err) { toast(err.message || 'Ошибка загрузки'); }
+});
+$('btnRemove').onclick = () => { S.img = null; S.vec = null; syncAll(); toast('Изображение убрано — экспорт содержит только резку'); };
+document.querySelectorAll('#modeSeg button').forEach(b => b.onclick = () => {
+  S.mode = b.dataset.m;
+  if (S.img && S.img.kind === 'raster' && S.mode === 'vector') vectorize();
+  syncAll();
+});
+document.querySelectorAll('#viewSeg button').forEach(b => b.onclick = () => { S.view = b.dataset.v; document.querySelectorAll('#viewSeg button').forEach(x => x.classList.toggle('on', x === b)); draw(); });
+$('btnFit').onclick = () => { fitImage('fit'); syncPlaceUI(); scheduleVec(); draw(); };
+$('btnFill').onclick = () => { fitImage('fill'); syncPlaceUI(); scheduleVec(); draw(); };
+$('btnCenter').onclick = () => { if (!S.img) return; S.place.cx = S.p.W / 2; S.place.cy = S.p.H / 2; syncPlaceUI(); scheduleVec(); draw(); };
+const placeChanged = () => { S.fitMode = 'custom'; scheduleVec(); draw(); };
+bindPair('iScaleR', 'iScale', v => { if (!S.img || !(v > 0)) return; S.place.s = baseScale() * v / 100; placeChanged(); });
+bindPair('iRotR', 'iRot', v => { if (!S.img) return; S.place.rot = Math.max(-180, Math.min(180, v)); placeChanged(); });
+$('iX').addEventListener('input', () => { const v = parseFloat($('iX').value); if (S.img && isFinite(v)){ S.place.cx = v; placeChanged(); } });
+$('iY').addEventListener('input', () => { const v = parseFloat($('iY').value); if (S.img && isFinite(v)){ S.place.cy = v; placeChanged(); } });
+const rot90 = d => { if (!S.img) return; let r = S.place.rot + d; if (r > 180) r -= 360; if (r < -180) r += 360; S.place.rot = r; if (S.fitMode === 'fit' || S.fitMode === 'fill') fitImage(S.fitMode); syncPlaceUI(); scheduleVec(); draw(); };
+$('btnRotL').onclick = () => rot90(-90); $('btnRotR').onclick = () => rot90(90);
+
+$('oGray').onchange = e => { S.opt.gray = e.target.checked; draw(); };
+$('oDpi').onchange = e => { S.opt.dpi = +e.target.value; };
+$('oRecolor').onchange = e => { S.opt.recolor = e.target.checked; draw(); };
+bindPair('oThrR', 'oThr', v => { S.opt.thr = v; scheduleVec(); });
+$('oInv').onchange = e => { S.opt.inv = e.target.checked; scheduleVec(); };
+bindPair('oSpeckR', 'oSpeck', v => { S.opt.speck = Math.max(0, v); scheduleVec(); });
+$('oSmooth').onchange = e => { S.opt.smooth = +e.target.value; scheduleVec(); };
+$('oVq').onchange = e => { S.opt.vq = +e.target.value; scheduleVec(); };
+$('cmpOn').onchange = e => { S.opt.compare = e.target.checked; draw(); };
+$('cmpSplit').oninput = e => { S.opt.split = +e.target.value; draw(); };
+
+// Каждое скачивание строится из снимка параметров на момент нажатия
+async function runExport(job){
+  if (!canExport()) { toast('Экспорт заблокирован: дождитесь пересчёта или исправьте параметры'); return; }
+  const X = snapshot();
+  S.exporting = true; updateExportUI();
+  try { await job(X); }
+  catch (e) { toast('Ошибка экспорта: ' + (e.message || e)); }
+  finally { S.exporting = false; updateExportUI(); }
+}
+$('btnSvg').onclick = () => runExport(X => download(baseName(X) + '.svg', svgDoc(true, X), 'image/svg+xml'));
+$('btnCutSvg').onclick = () => runExport(X => download(baseName(X) + '_cut.svg', svgDoc(false, X), 'image/svg+xml'));
+$('btnCutDxf').onclick = () => runExport(X => download(baseName(X) + '_cut.dxf', dxfDoc(false, X), 'application/dxf'));
+$('btnDxf').onclick = () => runExport(async X => {
+  if (engraveKind(X) === 'raster'){ const { blob, r } = await dxfKit(X); download(baseName(X) + '_DXF+PNG.zip', blob); if (r.reduced) toast(`PNG уменьшен до ${fmt(r.dpiX, 0)} DPI из-за размера`); }
+  else download(baseName(X) + '.dxf', dxfDoc(true, X), 'application/dxf');
+});
+$('btnPng').onclick = () => runExport(async X => { const { bytes } = await rasterPngBytes(X); download(baseName(X) + '_engrave.png', new Blob([bytes], { type: 'image/png' })); });
+window.addEventListener('resize', draw);
+
+/* ================= Самопроверка ================= */
+function parseDXF(txt){
+  const L = txt.split(/\r?\n/), res = { layers: {}, insunits: null }; let cur = null, vtx = null;
+  for (let i = 0; i + 1 < L.length; i += 2){
+    const c = parseInt(L[i], 10), v = L[i+1].trim();
+    if (c === 9 && v === '$INSUNITS') res.insunits = parseInt(L[i+3], 10);
+    if (c === 0){
+      if (v === 'POLYLINE'){ cur = { layer: '', pts: [], closed: false }; vtx = null; }
+      else if (v === 'VERTEX' && cur){ vtx = [0, 0]; cur.pts.push(vtx); }
+      else if (v === 'SEQEND' && cur){ (res.layers[cur.layer] = res.layers[cur.layer] || []).push(cur); cur = null; vtx = null; }
+      continue;
+    }
+    if (!cur) continue;
+    if (c === 8 && !vtx) cur.layer = v;
+    if (c === 70 && !vtx) cur.closed = (parseInt(v, 10) & 1) === 1;
+    if (vtx && c === 10) vtx[0] = parseFloat(v);
+    if (vtx && c === 20) vtx[1] = parseFloat(v);
+  }
+  return res;
+}
+function commonChecks(dxfTxt, svgTxt){
+  const P = S.puzzle, { W, H } = S.p, out = [];
+  const ok = (cond, text) => out.push({ ok: !!cond, text });
+  const dx = parseDXF(dxfTxt);
+  ok(dx.insunits === 4, 'DXF: единицы — миллиметры ($INSUNITS = 4)');
+  const outer = dx.layers.CUT_OUTER || [];
+  let bb = [1e9, 1e9, -1e9, -1e9]; outer.forEach(pl => pl.pts.forEach(([x, y]) => { bb = [Math.min(bb[0], x), Math.min(bb[1], y), Math.max(bb[2], x), Math.max(bb[3], y)]; }));
+  const bw = bb[2] - bb[0], bh = bb[3] - bb[1];
+  ok(outer.length === 1 && Math.abs(bb[0]) < 0.01 && Math.abs(bb[1]) < 0.01 && Math.abs(bw - W) < 0.01 && Math.abs(bh - H) < 0.01, `DXF: внешний контур ${nf(bw)} × ${nf(bh)} мм (задано ${nf(W)} × ${nf(H)})`);
+  const inner = dx.layers.CUT_INNER || [];
+  ok(inner.length === P.lines.length, `DXF: CUT_INNER — ${inner.length} линий сетки (ожидается ${P.lines.length})`);
+  // каждый стык (по вершине выступа) найден ровно в одной полилинии
+  const boxes = inner.map(pl => { let b = [1e9, 1e9, -1e9, -1e9]; pl.pts.forEach(([x, y]) => { b = [Math.min(b[0], x), Math.min(b[1], y), Math.max(b[2], x), Math.max(b[3], y)]; }); return b; });
+  let badEdge = 0;
+  for (const e of P.edges){
+    const m = bez(e.cub[1], 0.5), x = m[0], y = H - m[1]; let cnt = 0;
+    inner.forEach((pl, i) => { const b = boxes[i]; if (x < b[0] - 0.1 || x > b[2] + 0.1 || y < b[1] - 0.1 || y > b[3] + 0.1) return;
+      for (let k = 0; k < pl.pts.length - 1; k++){ if (dPS(x, y, pl.pts[k][0], pl.pts[k][1], pl.pts[k+1][0], pl.pts[k+1][1]) < 0.05){ cnt++; return; } } });
+    if (cnt !== 1) badEdge++;
+  }
+  ok(badEdge === 0 && P.edges.length === P.R*(P.C-1) + P.C*(P.R-1), `DXF: каждый из ${P.edges.length} общих стыков присутствует ровно один раз${badEdge ? ` (ошибок: ${badEdge})` : ''}`);
+  const seen = new Set(); let dup = 0;
+  inner.forEach(pl => { for (let k = 0; k < pl.pts.length - 1; k++){ const a = pl.pts[k].map(v => v.toFixed(3)).join(','), b = pl.pts[k+1].map(v => v.toFixed(3)).join(','); const key = a < b ? a + '|' + b : b + '|' + a; if (seen.has(key)) dup++; else seen.add(key); } });
+  ok(dup === 0, `DXF: повторяющихся отрезков реза нет (${seen.size} отрезков)`);
+  const sd = new DOMParser().parseFromString(svgTxt, 'image/svg+xml'), sr = sd.documentElement;
+  ok(sr.getAttribute('width') === nf(W) + 'mm' && sr.getAttribute('height') === nf(H) + 'mm' && sr.getAttribute('viewBox') === `0 0 ${nf(W)} ${nf(H)}`, `SVG: ${sr.getAttribute('width')} × ${sr.getAttribute('height')}, viewBox ${sr.getAttribute('viewBox')}`);
+  const si = sd.getElementById('CUT_INNER'), so = sd.getElementById('CUT_OUTER');
+  ok(si && so && si.querySelectorAll('path').length === P.lines.length && so.querySelectorAll('path').length === 1, `SVG: CUT_INNER — ${si ? si.querySelectorAll('path').length : 0} линий, CUT_OUTER — 1 контур`);
+  return { out, dx, sd };
+}
+function unzipStore(u8){
+  const out = {}, dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength); let o = 0;
+  while (o + 30 <= u8.length && dv.getUint32(o, true) === 0x04034b50){
+    const size = dv.getUint32(o + 18, true), nl = dv.getUint16(o + 26, true), xl = dv.getUint16(o + 28, true);
+    const name = new TextDecoder().decode(u8.subarray(o + 30, o + 30 + nl)), st = o + 30 + nl + xl;
+    out[name] = u8.subarray(st, st + size); o = st + size;
+  }
+  return out;
+}
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+function makeCornerSvgFile(){
+  const { W, H } = S.p;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}mm" height="${H}mm">
+  <rect x="-10" y="-10" width="45" height="45" fill="#c0392b"/>
+  <circle cx="${W}" cy="${H}" r="30" fill="#2c3e50"/>
+  <path d="M-5 ${H + 5} L40 ${H - 40}" stroke="#000" stroke-width="2" fill="none"/>
+  <path d="M-8 -8 L60 60" stroke="#000" stroke-width="1" fill="none"/>
+</svg>`;
+  return new File([svg], 'test_corner.svg', { type: 'image/svg+xml' });
+}
+function pip(pt, poly){ let c = false; for (let i = 0, j = poly.length - 1; i < poly.length; j = i++){ const a = poly[i], b = poly[j]; if ((a[1] > pt[1]) !== (b[1] > pt[1]) && pt[0] < (b[0] - a[0]) * (pt[1] - a[1]) / (b[1] - a[1]) + a[0]) c = !c; } return c; }
+function makeLogoFile(){
+  const c = document.createElement('canvas'); c.width = 1000; c.height = 460; const x = c.getContext('2d');
+  x.fillStyle = '#000'; x.font = 'bold 250px Arial, Helvetica, sans-serif'; x.textBaseline = 'middle'; x.fillText('AOB', 330, 235);
+  x.beginPath(); x.arc(160, 230, 140, 0, Math.PI*2); x.arc(160, 230, 80, 0, Math.PI*2, true); x.fill();
+  for (let i = 0; i < 40; i++) x.fillRect(Math.random()*1000, Math.random()*460, 2, 2); // мелкий мусор
+  return new Promise(r => c.toBlob(b => r(new File([b], 'test_logo.png', { type: 'image/png' })), 'image/png'));
+}
+function makePhotoFile(){
+  const c = document.createElement('canvas'); c.width = 1200; c.height = 800; const x = c.getContext('2d');
+  let g = x.createLinearGradient(0, 0, 0, 800); g.addColorStop(0, '#7fb2e5'); g.addColorStop(0.6, '#f3d9a4'); g.addColorStop(1, '#5d4126'); x.fillStyle = g; x.fillRect(0, 0, 1200, 800);
+  g = x.createRadialGradient(820, 300, 10, 820, 300, 260); g.addColorStop(0, 'rgba(255,250,220,1)'); g.addColorStop(1, 'rgba(255,250,220,0)'); x.fillStyle = g; x.fillRect(0, 0, 1200, 800);
+  x.fillStyle = '#3c2f22'; x.beginPath(); x.moveTo(0, 620); for (let i = 0; i <= 12; i++) x.lineTo(i*100, 560 + Math.sin(i*1.3)*60); x.lineTo(1200, 800); x.lineTo(0, 800); x.fill();
+  return new Promise(r => c.toBlob(b => r(new File([b], 'test_photo.jpg', { type: 'image/jpeg' })), 'image/jpeg', 0.9));
+}
+async function runSelfTest(){
+  const outEl = $('testOut');
+  if (!canExport()){ outEl.innerHTML = '<p class="bad">Сначала исправьте ошибки параметров в разделе 1.</p>'; return; }
+  $('btnTest').disabled = true; outEl.innerHTML = '<p class="muted">Проверяю…</p>';
+  await new Promise(r => setTimeout(r, 30));
+  const saved = { img: S.img, mode: S.mode, place: { ...S.place }, fitMode: S.fitMode, vec: S.vec, opt: { ...S.opt }, note: $('modeNote').innerHTML, noteHidden: $('modeNote').hidden };
+  const groups = [];
+  try {
+    S.opt = { ...S.opt, thr: 128, inv: false, speck: 0.5, smooth: 1, gray: true, dpi: 254 };
+    // 1) PNG-логотип → векторная гравировка
+    await loadFile(await makeLogoFile(), { silent: true });
+    let c1 = [];
+    c1.push({ ok: S.mode === 'vector', text: 'Режим «Автоматическая векторизация» включился автоматически' });
+    vectorize();
+    const rings = S.vec ? S.vec.rings : [];
+    let holes = 0; for (let i = 0; i < rings.length; i++) for (let j = 0; j < rings.length; j++) if (i !== j && pip(rings[i][0], rings[j])){ holes++; break; }
+    c1.push({ ok: rings.length >= 5, text: `Контуров гравировки: ${rings.length}` });
+    c1.push({ ok: holes >= 3, text: `Внутренние отверстия сохранены: ${holes} (кольцо, «A», «O», «B»)` });
+    c1.push({ ok: S.vec && S.vec.removed > 0, text: `Мелкие точки удалены: ${S.vec ? S.vec.removed : 0}` });
+    const svg1 = svgDoc(true), dxf1 = dxfDoc(true), k1 = commonChecks(dxf1, svg1);
+    const engD = k1.dx.layers.ENGRAVE || [];
+    let inside = true; engD.forEach(pl => pl.pts.forEach(([x, y]) => { if (x < -0.01 || y < -0.01 || x > S.p.W + 0.01 || y > S.p.H + 0.01) inside = false; }));
+    c1.push({ ok: engD.length === rings.length && inside, text: `DXF: ENGRAVE — ${engD.length} замкнутых контуров в границах пазла` });
+    c1.push({ ok: !!k1.sd.querySelector('#ENGRAVE path[fill-rule="evenodd"]') && !k1.sd.querySelector('#ENGRAVE image'), text: 'SVG: векторная гравировка на слое ENGRAVE (evenodd, без растра)' });
+    groups.push(['1. PNG с логотипом → векторная гравировка', c1.concat(k1.out)]);
+
+    // 2) JPG-фото → простая гравировка с полутонами
+    await loadFile(await makePhotoFile(), { silent: true });
+    let c2 = [];
+    c2.push({ ok: S.mode === 'simple', text: 'Режим «Простая гравировка» включился автоматически' });
+    const rr = composeRaster(); const d = rr.cv.getContext('2d').getImageData(0, 0, rr.w, rr.h).data;
+    const lv = new Set(); for (let i = 0; i < d.length; i += 4 * 7) lv.add(d[i]);
+    c2.push({ ok: lv.size >= 100, text: `Полутона сохранены: ${lv.size} уровней серого` });
+    c2.push({ ok: Math.abs(rr.dpiX - 254) < 1 && Math.abs(rr.w / rr.dpiX * 25.4 - S.p.W) < 0.01, text: `PNG ${rr.w} × ${rr.h} пикс. при ${fmt(rr.dpiX, 1)} DPI = ${nf(rr.w / rr.dpiX * 25.4)} × ${nf(rr.h / rr.dpiY * 25.4)} мм` });
+    const svg2 = svgDoc(true), k2 = commonChecks(dxfDoc(false), svg2);
+    const im = k2.sd.querySelector('#ENGRAVE image');
+    c2.push({ ok: im && im.getAttribute('x') === '0' && im.getAttribute('y') === '0' && im.getAttribute('width') === nf(S.p.W) && im.getAttribute('height') === nf(S.p.H), text: 'SVG: изображение включено на слой ENGRAVE, x=0 y=0, размер = размер пазла' });
+    const { blob, r } = await dxfKit(snapshot()); const zb = new Uint8Array(await blob.arrayBuffer()); const zs = new TextDecoder().decode(zb);
+    c2.push({ ok: zs.includes('puzzle.dxf') && zs.includes('engrave.png') && zs.includes('README.txt'), text: `Комплект ZIP: puzzle.dxf + engrave.png + README.txt (${Math.round(zb.length / 1024)} КБ)` });
+    const pb = (await rasterPngBytes()).bytes; const ph = new TextDecoder('latin1').decode(pb.subarray(0, 80));
+    c2.push({ ok: ph.includes('pHYs'), text: 'PNG содержит физический размер (pHYs) для LightBurn' });
+    c2.push({ ok: !(k2.dx.layers.ENGRAVE || []).length, text: 'DXF комплекта: только линии реза, растр — в PNG с той же системой координат' });
+    groups.push(['2. JPG с фотографией → полутона (простой режим)', c2.concat(k2.out)]);
+
+    // 3) Без изображения
+    S.img = null; S.vec = null;
+    let c3 = [];
+    const svg3 = svgDoc(true), dxf3 = dxfDoc(true), k3 = commonChecks(dxf3, svg3);
+    c3.push({ ok: !(k3.dx.layers.ENGRAVE || []).length, text: 'DXF: слой ENGRAVE пуст — только резка' });
+    c3.push({ ok: k3.sd.getElementById('ENGRAVE').childElementCount === 0, text: 'SVG: слой ENGRAVE пуст — чистый файл резки' });
+    groups.push(['3. Пазл без изображения → чистый файл резки', c3.concat(k3.out)]);
+
+    // 4) SVG, заходящий в углы → обрезка по фактическому контуру со скруглениями
+    await loadFile(makeCornerSvgFile(), { silent: true });
+    const c4 = [], { W, H } = S.p, rr4 = S.puzzle.rad;
+    const dx4 = parseDXF(dxfDoc(true)), eng4 = dx4.layers.ENGRAVE || [];
+    // расстояние за пределы контура (мм, >0 — снаружи), в осях SVG
+    const outside = (x, y) => {
+      if (rr4 <= 0) return Math.max(-x, -y, x - W, y - H);
+      const cx = x < rr4 ? rr4 : x > W - rr4 ? W - rr4 : x, cy = y < rr4 ? rr4 : y > H - rr4 ? H - rr4 : y;
+      if ((x < rr4 || x > W - rr4) && (y < rr4 || y > H - rr4)) return Math.hypot(x - cx, y - cy) - rr4;
+      return Math.max(-x, -y, x - W, y - H);
+    };
+    let worstOut = -1e9, onArcTL = 0, onArcBR = 0, onArcBL = 0;
+    eng4.forEach(pl => pl.pts.forEach(([x, Y]) => { const y = H - Y, d = outside(x, y); worstOut = Math.max(worstOut, d);
+      if (rr4 > 0 && Math.abs(d) < 0.02){ if (x < rr4 && y < rr4) onArcTL++; if (x > W - rr4 && y > H - rr4) onArcBR++; if (x < rr4 && y > H - rr4) onArcBL++; } }));
+    c4.push({ ok: eng4.length >= 3, text: `DXF: ENGRAVE — ${eng4.length} контуров из SVG` });
+    c4.push({ ok: worstOut <= 0.001, text: `DXF: ни одна точка гравировки не выходит за внешний контур (макс. выход ${fmt(Math.max(0, worstOut), 3)} мм)` });
+    c4.push({ ok: rr4 <= 0 || (onArcTL > 0 && onArcBR > 0), text: rr4 > 0 ? `DXF: гравировка в углах идёт по дуге R ${fmt(rr4)} мм (точек на дуге: ЛВ ${onArcTL}, ПН ${onArcBR})` : 'Скругление 0 — граница прямоугольная' });
+    const open4 = eng4.filter(pl => !pl.closed);
+    const lineOk = open4.length >= 2 && open4.every(pl => { const a = pl.pts[0], b = pl.pts[pl.pts.length - 1]; return Math.min(Math.abs(outside(a[0], H - a[1])), Math.abs(outside(b[0], H - b[1]))) < 0.02; });
+    c4.push({ ok: lineOk, text: `DXF: открытые линии обрезаны точно на контуре (${open4.length} шт.)` });
+    const sd4 = new DOMParser().parseFromString(svgDoc(true), 'image/svg+xml');
+    const gClip = sd4.querySelector('#ENGRAVE > g'), cpD = sd4.querySelector('#puzzleClip path').getAttribute('d'), outD = sd4.querySelector('#CUT_OUTER path').getAttribute('d');
+    c4.push({ ok: gClip && gClip.getAttribute('clip-path') === 'url(#puzzleClip)' && cpD === outD, text: 'SVG: гравировка обрезана clipPath, совпадающим с контуром CUT_OUTER' });
+    // предпросмотр: пиксель снаружи скругления пустой, внутри — гравировка
+    const vSave = S.view; S.view = 'engrave'; drawNow();
+    const cvp = $('cv'), dpr = cvp.width / parseFloat(cvp.style.width), px = (x, y) => { const d = cvp.getContext('2d').getImageData(Math.round((V.ox + x * V.k) * dpr), Math.round((V.oy + y * V.k) * dpr), 1, 1).data; return d[3] / 255 * (255 - (0.299*d[0] + 0.587*d[1] + 0.114*d[2])); }; // «темнота» с учётом прозрачности
+    if (rr4 * V.k >= 6){
+      const o = 0.12 * rr4, inn = rr4 * 0.55;
+      const outsideL = px(o, o), insideL = px(inn, inn);
+      c4.push({ ok: outsideL < 60 && insideL > 150, text: `Предпросмотр: за дугой угла пусто (темнота ${Math.round(outsideL)} из 255), внутри — гравировка (${Math.round(insideL)})` });
+    } else c4.push({ ok: true, text: 'Предпросмотр: обрезка тем же контуром (rrPath); пиксельная проверка пропущена — угол меньше 6 пикс. на экране' });
+    S.view = vSave;
+    groups.push(['4. SVG заходит в углы → обрезка по скруглённому контуру', c4]);
+
+    // 5) Блокировка экспорта и неизменность комплекта ZIP
+    const c5 = [], btns = ['btnSvg', 'btnDxf', 'btnCutSvg', 'btnCutDxf'];
+    const allDisabled = () => btns.every(id => $(id).disabled);
+    for (const [id, bad] of [['pW', '5'], ['pTab', '99'], ['pJit', '50']]){
+      const keep = $(id).value, label = Object.values(FIELDS).find(f => f[0] === id)[1];
+      $(id).value = ''; $(id).dispatchEvent(new Event('input'));
+      const instantly = allDisabled();
+      await sleep(250);
+      const emptyOk = allDisabled() && FERR[id].textContent.length > 0;
+      $(id).value = bad; $(id).dispatchEvent(new Event('input'));
+      await sleep(250);
+      const badOk = allDisabled() && FERR[id].textContent.length > 0;
+      $(id).value = keep; $(id).dispatchEvent(new Event('input'));
+      const stillBlocked = allDisabled();
+      await sleep(250);
+      const back = !allDisabled() && !FERR[id].textContent;
+      c5.push({ ok: instantly && emptyOk && badOk && stillBlocked && back, text: `«${label}»: блокировка сразу при вводе — ${instantly ? 'да' : 'НЕТ'}; пустое — ${emptyOk ? 'заблокировано, ошибка у поля' : 'НЕТ'}; «${bad}» — ${badOk ? 'заблокировано, ошибка у поля' : 'НЕТ'}; после исправления — ${back ? 'разблокировано' : 'НЕТ'}` });
+    }
+    await loadFile(await makePhotoFile(), { silent: true });
+    const X5 = snapshot(), W5 = X5.p.W, H5 = X5.p.H, keepW = $('pW').value;
+    const kitP = dxfKit(X5);
+    $('pW').value = String(W5 - 50); regen();                 // пользователь меняет размер, пока ZIP формируется
+    const kit = await kitP;
+    const files = unzipStore(new Uint8Array(await kit.blob.arrayBuffer()));
+    const dz = parseDXF(new TextDecoder().decode(files['puzzle.dxf']));
+    let bz = [1e9, 1e9, -1e9, -1e9]; (dz.layers.CUT_OUTER || []).forEach(pl => pl.pts.forEach(([x, y]) => { bz = [Math.min(bz[0], x), Math.min(bz[1], y), Math.max(bz[2], x), Math.max(bz[3], y)]; }));
+    const pngW = new DataView(files['engrave.png'].buffer, files['engrave.png'].byteOffset + 16, 8).getUint32(0);
+    const readme = new TextDecoder().decode(files['README.txt']);
+    const zipOk = Math.abs(bz[2] - W5) < 0.01 && Math.abs(bz[3] - H5) < 0.01 && pngW === Math.round(W5 * X5.opt.dpi / 25.4) && readme.includes(`${nf(W5)} × ${nf(H5)} мм`);
+    c5.push({ ok: zipOk, text: `ZIP при изменении ширины на ${W5 - 50} мм во время сборки: DXF ${nf(bz[2] - bz[0])} × ${nf(bz[3] - bz[1])} мм, PNG ${pngW} пикс., README ${readme.includes(nf(W5) + ' × ') ? nf(W5) : '?'} мм — все по исходным ${nf(W5)} × ${nf(H5)}` });
+    $('pW').value = keepW; regen();
+    c5.push({ ok: S.p.W === W5 && canExport(), text: 'Параметры восстановлены, экспорт снова доступен' });
+    groups.push(['5. Блокировка экспорта и снимок параметров', c5]);
+
+    // 6) SVG с огромным viewBox: матрица сохраняется с полной точностью
+    const c6 = [], BIG = 1000000;
+    const bigSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${BIG} ${BIG}"><rect x="100000" y="150000" width="500000" height="300000" fill="#000"/><circle cx="700000" cy="650000" r="200000" fill="#000"/></svg>`;
+    await loadFile(new File([bigSvg], 'test_big_viewbox.svg', { type: 'image/svg+xml' }), { silent: true });
+    S.place.rot = 30; S.place.s = baseScale() * 0.8; S.place.cx = S.p.W * 0.45; S.place.cy = S.p.H * 0.55; S.fitMode = 'custom';
+    const m6 = placeMat(), svg6 = svgDoc(true);
+    const mt = svg6.match(/matrix\(([^)]*)\)/), nums = mt ? mt[1].trim().split(/\s+/).map(Number) : [];
+    const exact = nums.length === 6 && [m6.a, m6.b, m6.c, m6.d, m6.e, m6.f].every((v, i) => nums[i] === v);
+    c6.push({ ok: exact, text: `matrix() записана с полной точностью: масштаб ${mt ? mt[1].split(/\s+/)[0] : '—'} (было бы ${(Math.round(m6.a * 1000) / 1000)} при 3 знаках)` });
+    c6.push({ ok: mt && !/e/i.test(mt[1]), text: 'Числа в обычной десятичной записи, без экспоненты' });
+    // рендер скачанного SVG и предпросмотра одним масштабом — маски гравировки должны совпасть
+    const ppm6 = 2, w6 = Math.round(S.p.W * ppm6), h6 = Math.round(S.p.H * ppm6);
+    const doc6 = svg6.replace(/<svg([^>]*?)width="[^"]*"\s+height="[^"]*"/, `<svg$1width="${w6}" height="${h6}"`);
+    const im6 = await loadImg(URL.createObjectURL(new Blob([doc6], { type: 'image/svg+xml' })));
+    const cvA = document.createElement('canvas'); cvA.width = w6; cvA.height = h6; const ca = cvA.getContext('2d', { willReadFrequently: true });
+    ca.fillStyle = '#fff'; ca.fillRect(0, 0, w6, h6); ca.drawImage(im6, 0, 0, w6, h6);
+    const cvB = document.createElement('canvas'); cvB.width = w6; cvB.height = h6; const cb = cvB.getContext('2d', { willReadFrequently: true });
+    cb.fillStyle = '#fff'; cb.fillRect(0, 0, w6, h6); cb.scale(ppm6, ppm6); rrPath(cb, S.p.W, S.p.H, S.puzzle.rad); cb.clip();
+    cb.transform(m6.a, m6.b, m6.c, m6.d, m6.e, m6.f); cb.drawImage(S.opt.recolor ? S.img.elBlack : S.img.el, 0, 0, S.img.iw, S.img.ih);   // как в предпросмотре
+    const da = ca.getImageData(0, 0, w6, h6).data, db = cb.getImageData(0, 0, w6, h6).data;
+    let inter = 0, uni = 0, sa = [0, 0, 0], sb = [0, 0, 0], hasRed = 0;
+    for (let i = 0, k = 0; i < da.length; i += 4, k++){
+      if (da[i] > 200 && da[i+1] < 80) hasRed++;                       // красные линии реза SVG не считаем гравировкой
+      const A = da[i] < 100 && da[i+1] < 100 && da[i+2] < 100, B = db[i] < 100;
+      if (A && B) inter++; if (A || B) uni++;
+      const x = k % w6, y = (k / w6) | 0;
+      if (A){ sa[0] += x; sa[1] += y; sa[2]++; } if (B){ sb[0] += x; sb[1] += y; sb[2]++; }
+    }
+    const iou = uni ? inter / uni : 0, dc = sa[2] && sb[2] ? Math.hypot(sa[0]/sa[2] - sb[0]/sb[2], sa[1]/sa[2] - sb[1]/sb[2]) / ppm6 : 99;
+    c6.push({ ok: sa[2] > 1000, text: `Гравировка присутствует в скачанном SVG (${sa[2]} пикс. при ${ppm6} пикс/мм)` });
+    c6.push({ ok: iou > 0.97 && dc < 0.3 && Math.abs(sa[2] / sb[2] - 1) < 0.03, text: `Скачанный SVG совпадает с предпросмотром: совпадение площади ${fmt(iou * 100, 1)} %, смещение центра ${fmt(dc, 2)} мм (поворот 30°, масштаб 80 %, сдвиг от центра)` });
+    groups.push(['6. SVG с viewBox 0 0 1000000 1000000 → точная матрица', c6]);
+  } catch (err) {
+    groups.push(['Ошибка самопроверки', [{ ok: false, text: err.message || String(err) }]]);
+  } finally {
+    Object.assign(S, { img: saved.img, mode: saved.mode, place: saved.place, fitMode: saved.fitMode, vec: saved.vec, opt: saved.opt });
+    $('modeNote').innerHTML = saved.note; $('modeNote').hidden = saved.noteHidden;
+    syncAll(); $('btnTest').disabled = false;
+  }
+  const all = groups.flatMap(g => g[1]), pass = all.filter(c => c.ok).length;
+  outEl.innerHTML = `<p class="${pass === all.length ? 'ok' : 'bad'}"><b>${pass === all.length ? '✓ Все проверки пройдены' : '✗ Есть ошибки'}: ${pass} из ${all.length}</b></p><table>` +
+    groups.map(([n, cs]) => `<tr><td colspan="2" class="scn">${n}</td></tr>` + cs.map(c => `<tr><td class="${c.ok ? 'ok' : 'bad'}">${c.ok ? '✓' : '✗'}</td><td>${c.text}</td></tr>`).join('')).join('') + '</table>';
+  window.__selfTest = { pass, total: all.length, groups };
+}
+$('btnTest').onclick = runSelfTest;
+
+/* ================= Старт ================= */
+regen(); syncAll();
+</script>
+</body>
+</html>
