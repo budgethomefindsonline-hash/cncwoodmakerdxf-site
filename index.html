@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CNCWoodMakerDXF — Laser Cut Files &amp; Free Box Generators (DXF, SVG, AI)</title>
+<meta name="description" content="Laser cut files for plywood (DXF, SVG, AI) and free online box generators. Bottle gift boxes, keepsake boxes, Christmas decor. Designed in London for diode and CO₂ lasers.">
+<meta property="og:title" content="CNCWoodMakerDXF — Laser Cut Files & Free Generators">
+<meta property="og:image" content="img/bottle-oak.jpg">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='14' fill='%231f2a22'/><rect x='14' y='26' width='36' height='26' rx='2' fill='%23d9b27c'/><rect x='11' y='18' width='42' height='10' rx='2' fill='%23b88a52'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#1d1a16;--muted:#6d6258;--paper:#f7f3ec;--card:#fff;--line:#e7ddcf;
+  --dark:#1f2a22;--dark2:#16201a;--gold:#c49a5c;--gold2:#a77b3f;--wood:#e9d3ad;--red:#9e2f24;
+  --r:14px;--shadow:0 18px 40px -18px rgba(30,22,12,.35);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:Inter,system-ui,sans-serif;background:var(--paper);color:var(--ink);line-height:1.6;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+img{display:block;max-width:100%}
+.wrap{max-width:1200px;margin:0 auto;padding:0 20px}
+h1,h2,h3{font-family:"Cormorant Garamond",Georgia,serif;font-weight:600;letter-spacing:-.2px;line-height:1.1}
+h2{font-size:clamp(2rem,4vw,2.8rem)}
+.eyebrow{font-size:.75rem;letter-spacing:.18em;text-transform:uppercase;font-weight:600;color:var(--gold2)}
+.sub{color:var(--muted);max-width:620px;margin:10px 0 34px}
+section{padding:80px 0}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:13px 22px;border-radius:999px;font-weight:600;font-size:.92rem;transition:.2s;border:1px solid transparent;cursor:pointer}
+.btn-gold{background:var(--gold);color:#1d1a16}.btn-gold:hover{background:#d4ab6d}
+.btn-dark{background:var(--dark);color:#fff}.btn-dark:hover{background:#2c3a30}
+.btn-ghost{border-color:rgba(255,255,255,.45);color:#fff}.btn-ghost:hover{background:rgba(255,255,255,.08)}
+.btn-line{border-color:var(--ink)}.btn-line:hover{background:var(--ink);color:#fff}
+.btn-soon{background:#efe7da;color:var(--muted);cursor:default}
+.ico{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;flex:none}
+
+/* top + header */
+.topbar{background:var(--dark2);color:#d8d2c6;font-size:.8rem;text-align:center;padding:8px 12px;letter-spacing:.02em}
+.topbar b{color:var(--gold)}
+header{position:sticky;top:0;z-index:30;background:rgba(247,243,236,.94);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.nav{display:flex;align-items:center;justify-content:space-between;height:70px;gap:16px}
+.logo{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:.01em}
+.logo-mark{width:34px;height:34px;border-radius:9px;background:var(--dark);display:grid;place-items:center}
+.logo small{display:block;font-weight:500;font-size:.68rem;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-top:-2px}
+.menu{display:flex;gap:26px;font-size:.9rem;font-weight:500;color:#4a423a}
+.menu a:hover{color:var(--gold2)}
+.burger{display:none;background:none;border:0;cursor:pointer;padding:6px}
+.nav-cta{padding:10px 18px}
+@media(max-width:900px){
+  .burger{display:block}
+  .menu{display:none;position:absolute;top:70px;left:0;right:0;flex-direction:column;gap:16px;padding:20px;background:var(--paper);border-bottom:1px solid var(--line)}
+  .menu.open{display:flex}
+}
+@media(max-width:520px){.nav-cta{display:none}}
+
+/* hero */
+.hero{background:var(--dark);color:#f3efe8;overflow:hidden}
+.hero-grid{display:grid;grid-template-columns:1fr 1.05fr;min-height:620px}
+.hero-text{padding:90px 40px 90px max(20px,calc((100vw - 1200px)/2 + 20px));display:flex;flex-direction:column;justify-content:center}
+.hero h1{font-size:clamp(2.6rem,5.4vw,4.4rem);margin:18px 0 20px}
+.hero h1 em{font-style:italic;color:var(--gold)}
+.hero p{color:#c9c3b8;font-size:1.08rem;max-width:500px}
+.hero .cta{display:flex;flex-wrap:wrap;gap:12px;margin-top:32px}
+.hero-img{position:relative;min-height:420px}
+.hero-img img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.hero-img::before{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient(90deg,var(--dark) 0%,rgba(31,42,34,0) 22%)}
+.hero-tag{position:absolute;z-index:2;left:28px;bottom:28px;background:rgba(22,32,26,.82);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.12);padding:12px 16px;border-radius:12px;font-size:.85rem}
+.hero-tag b{display:block;font-family:"Cormorant Garamond",serif;font-size:1.2rem;color:var(--gold)}
+@media(max-width:900px){.hero-grid{grid-template-columns:1fr}.hero-text{padding:56px 20px}.hero-img{min-height:340px;order:-1}.hero-img::before{background:linear-gradient(0deg,var(--dark) 0%,rgba(31,42,34,0) 30%)}}
+
+.trust{background:#fff;border-bottom:1px solid var(--line)}
+.trust .wrap{display:grid;grid-template-columns:repeat(5,1fr)}
+.trust div{display:flex;align-items:center;gap:10px;padding:22px 10px;font-size:.86rem;font-weight:500;color:#3b342d}
+.trust .ico{color:var(--gold2)}
+@media(max-width:900px){.trust .wrap{grid-template-columns:repeat(2,1fr)}}
+
+/* collection */
+.coll-head{display:flex;justify-content:space-between;align-items:end;gap:20px;flex-wrap:wrap}
+.coll{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
+@media(max-width:1000px){.coll{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:520px){.coll{grid-template-columns:1fr}}
+.pcard{background:var(--card);border-radius:var(--r);overflow:hidden;border:1px solid var(--line);display:flex;flex-direction:column;transition:.25s}
+.pcard:hover{transform:translateY(-4px);box-shadow:var(--shadow)}
+.pimg{aspect-ratio:4/3.4;overflow:hidden;position:relative;background:#eee}
+.pimg img{width:100%;height:100%;object-fit:cover;transition:transform .6s}
+.pcard:hover .pimg img{transform:scale(1.04)}
+.badge{position:absolute;top:12px;left:12px;z-index:2;background:var(--dark);color:#fff;font-size:.68rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;padding:5px 10px;border-radius:99px}
+.badge.gold{background:var(--gold);color:var(--ink)}
+.badge.red{background:var(--red)}
+.pbody{padding:16px 18px 18px;display:flex;flex-direction:column;gap:6px;flex:1}
+.pbody h3{font-size:1.35rem}
+.pbody p{font-size:.87rem;color:var(--muted);flex:1}
+.prow{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:10px}
+.price{font-weight:700}.price small{font-weight:500;color:var(--muted);font-size:.75rem;margin-right:3px}
+.prow .btn{padding:9px 16px;font-size:.84rem}
+
+/* engraved plywood placeholder for products without photos yet */
+.ply{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:20px;
+  background:
+   radial-gradient(ellipse at 30% 20%,rgba(255,255,255,.35),transparent 60%),
+   repeating-linear-gradient(92deg,rgba(150,105,55,.10) 0 2px,transparent 2px 9px),
+   repeating-linear-gradient(88deg,rgba(120,80,40,.07) 0 1px,transparent 1px 23px),
+   linear-gradient(160deg,#f0dcb9,#dcbf91)}
+.ply span{font-family:"Cormorant Garamond",serif;font-weight:700;font-size:1.6rem;line-height:1.1;color:#6b4522;opacity:.85;
+  text-shadow:0 1px 0 rgba(255,255,255,.45);border:1.5px solid rgba(107,69,34,.45);padding:14px 18px;border-radius:6px;max-width:85%}
+
+/* generators */
+.gen{background:var(--dark);color:#f3efe8}
+.gen .sub{color:#b9b2a6}
+.gen .pcard{background:#26332a;border-color:#334236}
+.gen .pbody h3{color:#fff}.gen .pbody p{color:#b9b2a6}
+
+/* tabs/catalog */
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:26px}
+.tabs button{font:inherit;font-size:.86rem;font-weight:500;border:1px solid var(--line);background:#fff;padding:8px 16px;border-radius:99px;cursor:pointer;color:#4a423a}
+.tabs button.on{background:var(--ink);border-color:var(--ink);color:#fff}
+
+/* why */
+.why{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+@media(max-width:820px){.why{grid-template-columns:1fr}}
+.why div{background:#fff;padding:30px 26px}
+.why .ico{width:30px;height:30px;color:var(--gold2)}
+.why h3{font-size:1.35rem;margin:12px 0 6px}
+.why p{color:var(--muted);font-size:.92rem}
+
+/* about */
+.about{display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:center}
+@media(max-width:860px){.about{grid-template-columns:1fr;gap:30px}}
+.about img{border-radius:var(--r);box-shadow:var(--shadow);aspect-ratio:4/3.2;object-fit:cover;width:100%}
+.about p{color:var(--muted);margin-top:14px}
+.facts{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
+.facts span{border:1px solid var(--line);background:#fff;border-radius:99px;padding:7px 14px;font-size:.84rem;font-weight:500}
+
+/* faq */
+details{border-bottom:1px solid var(--line);padding:18px 0}
+summary{font-weight:600;cursor:pointer;list-style:none;display:flex;justify-content:space-between;gap:16px}
+summary::after{content:"+";font-size:1.3rem;color:var(--gold2);line-height:1}
+details[open] summary::after{content:"–"}
+details p{color:var(--muted);margin-top:10px;max-width:720px}
+
+/* follow band */
+.band{background:linear-gradient(120deg,var(--dark),#2c3b30);color:#fff;border-radius:20px;padding:44px;display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:22px}
+.band p{color:#c9c3b8}
+
+footer{background:var(--dark2);color:#a9a397;padding:56px 0 28px;font-size:.9rem}
+.fgrid{display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr;gap:30px}
+@media(max-width:760px){.fgrid{grid-template-columns:1fr 1fr}}
+footer h4{color:#fff;font-family:Inter,sans-serif;font-size:.8rem;letter-spacing:.14em;text-transform:uppercase;margin-bottom:12px}
+footer ul{list-style:none;display:grid;gap:8px}
+footer a:hover{color:var(--gold)}
+.copy{border-top:1px solid #2b3a2f;margin-top:40px;padding-top:20px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;font-size:.8rem}
+</style>
+</head>
+<body>
+
+<div class="topbar"><b>New:</b> Bottle Gift Box Collection &amp; free generator · Instant download · DXF + SVG + AI in every file</div>
+
+<header>
+  <div class="wrap nav">
+    <a class="logo" href="#top">
+      <span class="logo-mark"><svg width="20" height="20" viewBox="0 0 64 64"><rect x="10" y="26" width="44" height="30" rx="2" fill="#d9b27c"/><rect x="6" y="14" width="52" height="13" rx="2" fill="#b88a52"/></svg></span>
+      <span>CNCWoodMakerDXF<small>Laser cut files · London</small></span>
+    </a>
+    <nav class="menu" id="menu">
+      <a href="#collection">Bottle Boxes</a>
+      <a href="#generators">Free Generators</a>
+      <a href="#catalog">Catalog</a>
+      <a href="#bundles">Bundles</a>
+      <a href="#about">About</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+    <div style="display:flex;gap:6px;align-items:center">
+      <a class="btn btn-dark nav-cta" href="https://www.etsy.com/shop/CNCWoodMakerDXF" target="_blank" rel="noopener">Shop on Etsy</a>
+      <button class="burger" aria-label="Menu" onclick="document.getElementById('menu').classList.toggle('open')"><svg class="ico" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    </div>
+  </div>
+</header>
+
+<main id="top">
+
+<!-- HERO -->
+<section class="hero" style="padding:0">
+  <div class="hero-grid">
+    <div class="hero-text">
+      <span class="eyebrow" style="color:var(--gold)">Laser cut files · Made in London</span>
+      <h1>Wooden gifts that <em>fit the first time</em></h1>
+      <p>Premium DXF, SVG and AI files for plywood: bottle gift boxes, keepsake boxes and Christmas decor. You can also design your own box in any size with my free online generators.</p>
+      <div class="cta">
+        <a class="btn btn-gold" href="#collection">Explore the collection</a>
+        <a class="btn btn-ghost" href="#generators">Free generators</a>
+      </div>
+    </div>
+    <div class="hero-img">
+      <img src="img/bottle-oak.jpg" alt="Laser cut plywood whisky gift box with Art Deco fan cut-outs and engraved oak leaves">
+      <div class="hero-tag"><b>Oak Signature</b>Bottle gift box · 3 mm plywood</div>
+    </div>
+  </div>
+</section>
+
+<div class="trust">
+  <div class="wrap">
+    <div><svg class="ico" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>Instant download</div>
+    <div><svg class="ico" viewBox="0 0 24 24"><path d="M4 4h16v16H4zM4 9h16M9 4v16"/></svg>DXF · SVG · AI</div>
+    <div><svg class="ico" viewBox="0 0 24 24"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg>Kerf-compensated joints</div>
+    <div><svg class="ico" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 18v2M17 18v2M7 10h4"/></svg>Diode &amp; CO₂ lasers</div>
+    <div><svg class="ico" viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6zM14 3v5h5M9 13h7M9 17h5"/></svg>Step-by-step README</div>
+  </div>
+</div>
+
+<!-- COLLECTION -->
+<section id="collection">
+  <div class="wrap">
+    <div class="coll-head">
+      <div>
+        <span class="eyebrow">New collection</span>
+        <h2>Bottle Gift Boxes</h2>
+        <p class="sub">Flexible living-hinge tops, a carry handle with a clip, and decorative cut-outs. They fit wine, whisky, rum and champagne bottles. Every design below can be made in your exact bottle size with the free generator.</p>
+      </div>
+      <a class="btn btn-line" href="bottle-box.html" style="margin-bottom:34px">Open the generator →</a>
+    </div>
+    <div class="coll" id="collGrid"></div>
+  </div>
+</section>
+
+<!-- GENERATORS -->
+<section id="generators" class="gen">
+  <div class="wrap">
+    <span class="eyebrow" style="color:var(--gold)">100% free · No sign-up</span>
+    <h2>Free box generators</h2>
+    <p class="sub">Enter your bottle or box size and material thickness, preview it in 3D, and export ready-to-cut files. Everything runs in your browser.</p>
+    <div class="coll" id="genGrid"></div>
+  </div>
+</section>
+
+<!-- CATALOG -->
+<section id="catalog">
+  <div class="wrap">
+    <span class="eyebrow">Shop</span>
+    <h2>Laser cut files</h2>
+    <p class="sub">Every file includes DXF (legacy and modern), SVG and AI formats, plus a README with assembly notes.</p>
+    <div class="tabs" id="tabs"></div>
+    <div class="coll" id="catGrid"></div>
+  </div>
+</section>
+
+<!-- BUNDLES -->
+<section id="bundles" style="padding-top:0">
+  <div class="wrap">
+    <span class="eyebrow">Save more</span>
+    <h2>Bundles</h2>
+    <p class="sub">All the sizes and variants in one download.</p>
+    <div class="coll" id="bundleGrid"></div>
+  </div>
+</section>
+
+<!-- WHY -->
+<section style="padding-top:0">
+  <div class="wrap">
+    <span class="eyebrow">Why makers choose us</span>
+    <h2>Files made by a maker, for makers</h2>
+    <p class="sub">Designed and drawn in my London workshop, with the details that save you wasted plywood.</p>
+    <div class="why">
+      <div><svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg><h3>Precise fit</h3><p>Finger joints and slots are designed with kerf compensation, so parts press together without glue gaps.</p></div>
+      <div><svg class="ico" viewBox="0 0 24 24"><path d="M3 7l9-4 9 4-9 4zM3 7v10l9 4 9-4V7M12 11v10"/></svg><h3>Complete package</h3><p>Each ZIP includes DXF (legacy and modern), SVG and AI files, a README and a clear licence.</p></div>
+      <div><svg class="ico" viewBox="0 0 24 24"><path d="M4 20l6-6M14 4l6 6-8 8-6-6z"/></svg><h3>Clean layers</h3><p>Red means cut and black means engrave. Import into LightBurn, check, and start the job.</p></div>
+      <div><svg class="ico" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="1"/><path d="M4 9h5V4"/></svg><h3>Fits small lasers</h3><p>The parts are laid out for a 400 × 400 mm bed, so they work on popular diode machines.</p></div>
+      <div><svg class="ico" viewBox="0 0 24 24"><path d="M3 8h18M3 12h18M3 16h18"/></svg><h3>Any thickness</h3><p>The files are drawn for 3 mm plywood, and the generators support 3–6 mm.</p></div>
+      <div><svg class="ico" viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg><h3>Real support</h3><p>If something doesn't fit, message me on Etsy and I'll help you sort it out.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ABOUT -->
+<section id="about" style="padding-top:0">
+  <div class="wrap about">
+    <img src="img/bottle-classic.jpg" alt="Hand placing a wine bottle into a laser cut plywood gift box in a woodworking workshop" loading="lazy">
+    <div>
+      <span class="eyebrow">About</span>
+      <h2>Hi, I'm Vadim</h2>
+      <p>I design laser cut files in my home workshop in London. I run a diode laser and a CNC router, mostly with 3 mm plywood. Every file comes with a clear README, so your first cut has the best chance of working.</p>
+      <p>I also build free online generators, so you can make a box in exactly the size you need instead of hunting for the right file.</p>
+      <div class="facts"><span>London, UK</span><span>Diode laser + CNC router</span><span>3–6 mm plywood</span><span>Etsy seller</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- FOLLOW -->
+<section id="free" style="padding-top:0">
+  <div class="wrap">
+    <div class="band">
+      <div>
+        <h2 style="font-size:2rem">New generators every month</h2>
+        <p>Follow along for new designs, free files and launch days.</p>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <a class="btn btn-gold" href="https://www.tiktok.com/@cnc.wood.maker" target="_blank" rel="noopener">TikTok</a>
+        <a class="btn btn-ghost" href="https://www.instagram.com/cncwoodmaker" target="_blank" rel="noopener">Instagram</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section id="faq" style="padding-top:0">
+  <div class="wrap" style="max-width:820px">
+    <span class="eyebrow">FAQ</span>
+    <h2 style="margin-bottom:20px">Good to know</h2>
+    <details><summary>How do I get the files after buying?</summary><p>Etsy gives you an instant download link right after payment, and the files stay in your Etsy purchases.</p></details>
+    <details><summary>Which lasers and software are supported?</summary><p>Any laser that reads DXF or SVG, whether diode, CO₂ or fibre. The files are prepared in LightBurn and also open in xTool Creative Space, Glowforge, Inkscape and LaserGRBL.</p></details>
+    <details><summary>Do the files include laser settings?</summary><p>No. Power and speed depend on your machine and material, so always run a small test cut first.</p></details>
+    <details><summary>Can I sell what I make?</summary><p>Yes, you can sell the physical items you cut from my files. Reselling or sharing the digital files themselves is not allowed.</p></details>
+    <details><summary>Are the generators really free?</summary><p>Yes. There's no sign-up and no download limit.</p></details>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="fgrid">
+      <div>
+        <div class="logo" style="color:#fff;margin-bottom:12px"><span class="logo-mark" style="background:#2c3a30"><svg width="20" height="20" viewBox="0 0 64 64"><rect x="10" y="26" width="44" height="30" rx="2" fill="#d9b27c"/><rect x="6" y="14" width="52" height="13" rx="2" fill="#b88a52"/></svg></span>CNCWoodMakerDXF</div>
+        <p>Laser cut files and free box generators, designed in London.</p>
+      </div>
+      <div><h4>Shop</h4><ul><li><a href="#collection">Bottle boxes</a></li><li><a href="#catalog">Catalog</a></li><li><a href="#bundles">Bundles</a></li></ul></div>
+      <div><h4>Tools</h4><ul><li><a href="bottle-box.html">Bottle box generator</a></li><li><a href="#generators">All generators</a></li><li><a href="#faq">FAQ</a></li></ul></div>
+      <div><h4>Follow</h4><ul>
+        <li><a href="https://www.etsy.com/shop/CNCWoodMakerDXF" target="_blank" rel="noopener">Etsy</a></li>
+        <li><a href="https://www.tiktok.com/@cnc.wood.maker" target="_blank" rel="noopener">TikTok</a></li>
+        <li><a href="https://www.instagram.com/cncwoodmaker" target="_blank" rel="noopener">Instagram</a></li>
+      </ul></div>
+    </div>
+    <div class="copy"><span>© <span id="y"></span> CNCWoodMakerDXF · cncwoodmakerdxf.com</span><span>Secure checkout via Etsy</span></div>
+  </div>
+</footer>
+
+<script>
+const ETSY="https://www.etsy.com/shop/CNCWoodMakerDXF"; // ✏️ later: each product's own Etsy link
+
+// Bottle collection (real photos)
+const coll=[
+ {n:"Champagne Window",d:"A tall label window, diamond cut-outs and a flexible top. Made for celebrations.",img:"bottle-champagne",tag:"New",alt:"Laser cut plywood champagne gift box with a vertical label window"},
+ {n:"Oak Signature",d:"Art Deco fans on the front and engraved oak leaves on the side, made for whisky.",img:"bottle-oak",tag:"Premium",alt:"Plywood whisky box with Art Deco fan cut-outs"},
+ {n:"Vine Reserve",d:"Climbing vine leaves cut through the walls, with an arched engraved frame on the front.",img:"bottle-vine",tag:"New",alt:"Plywood wine box with cut-out vine leaves"},
+ {n:"Classic Carrier",d:"A clean minimal box with a living-hinge top and a clip handle. Quick to cut and assemble.",img:"bottle-classic",tag:"Simple",alt:"Plain plywood wine carrier box being filled with a bottle"}
+];
+
+// ✏️ When a generator file is added, set url (e.g. "santa-box.html") and img
+const gens=[
+ {n:"Bottle Gift Box",d:"Wine, whisky, rum or champagne: any bottle size, with 20+ patterns, text and a 3D preview.",url:"bottle-box.html",img:"bottle-champagne",alt:"Bottle gift box made with the generator"},
+ {n:"Santa Box",d:"A Christmas gift box in any size.",url:""},
+ {n:"Star Box",d:"A star-shaped box with flexible walls.",url:""},
+ {n:"Ring Box",d:"A ring box with a removable, sliding or hinged lid.",url:""}
+];
+
+// ✏️ Prices: check each against your Etsy listing. Add img:"file-name" when a photo is ready.
+const products=[
+ {n:"Tarot Card Box",d:"Celestial engraving with sun, moon and stars.",p:"£4.99",c:"boxes",tag:"Bestseller"},
+ {n:"Dice Box, Roll for Initiative",d:"Dragon engraving for D&D players.",p:"£4.99",c:"boxes",tag:"Popular"},
+ {n:"Christmas Ornament Bundle",d:"6 ornament shapes ready to engrave.",p:"£5.99",c:"christmas",tag:"Christmas",red:1},
+ {n:"Christ Pantocrator Wall Clock",d:"A detailed icon-style wall clock.",p:"£9.99",c:"religious",tag:"Premium",gold:1},
+ {n:"Hinged Keepsake Box",d:"A Little Box of Happy Memories, 50×50×30 mm.",p:"£3.99",c:"boxes"},
+ {n:"Personalised Jewelry Box",d:"Name engraving on the lid.",p:"£5.99",c:"boxes"},
+ {n:"Jewelry Organizer Tray",d:"Compartments for rings and earrings.",p:"£2.99",c:"home"},
+ {n:"Spice Rack",d:"Wall or counter rack in 3 sizes.",p:"£3.99",c:"home"},
+ {n:"Card Box, Single Deck",d:"A snug fit for a standard deck.",p:"£2.99",c:"boxes"},
+ {n:"Sliding Lid Box",d:"A classic box with a smooth sliding lid.",p:"£2.99",c:"boxes"},
+ {n:"Integrated Hinge Box",d:"A laser-cut hinge with no hardware needed.",p:"£3.99",c:"boxes"},
+ {n:"SDS Plus Drill Bit Organizer",d:"Holds SDS bits from small to large.",p:"£2.99",c:"home"},
+ {n:"Teacher Gift Pencil Sign",d:"A personalised end-of-year gift.",p:"£3.99",c:"gifts"},
+ {n:"First Communion Cross",d:"A delicate keepsake cross.",p:"£3.99",c:"religious"},
+ {n:"Memorial Cross",d:"A remembrance cross with space for a name.",p:"£3.99",c:"religious"},
+ {n:"Orthodox Crucifix",d:"A traditional Orthodox cross design.",p:"£3.99",c:"religious"}
+];
+const bundles=[
+ {n:"Spice Rack Bundle",d:"All 3 sizes in one download.",p:"£8.99",tag:"Bundle"},
+ {n:"Card Box Bundle",d:"Single and double deck boxes.",p:"£4.99",tag:"Bundle"},
+ {n:"Christmas Ornament Bundle",d:"6 shapes for the festive season.",p:"£5.99",tag:"Christmas",red:1}
+];
+const cats=[{k:"all",n:"All files"},{k:"boxes",n:"Boxes"},{k:"christmas",n:"Christmas"},{k:"religious",n:"Religious & Memorial"},{k:"home",n:"Home & Organizers"},{k:"gifts",n:"Gifts"}];
+
+const esc=s=>s.replace(/&/g,"&amp;").replace(/</g,"&lt;");
+const media=x=>x.img
+  ? `<img src="img/${x.img}.jpg" alt="${esc(x.alt||x.n)}" loading="lazy">`
+  : `<div class="ply"><span>${esc(x.n)}</span></div>`;
+const badge=x=>x.tag?`<span class="badge ${x.red?'red':x.gold?'gold':''}">${x.tag}</span>`:'';
+
+const collCard=x=>`<article class="pcard"><div class="pimg">${badge(x)}${media(x)}</div>
+ <div class="pbody"><h3>${x.n}</h3><p>${x.d}</p>
+ <div class="prow"><span class="price">Free</span><a class="btn btn-dark" href="bottle-box.html">Design it →</a></div></div></article>`;
+const prodCard=x=>`<article class="pcard"><div class="pimg">${badge(x)}${media(x)}</div>
+ <div class="pbody"><h3>${x.n}</h3><p>${x.d}</p>
+ <div class="prow"><span class="price"><small>from</small>${x.p}</span><a class="btn btn-dark" href="${x.url||ETSY}" target="_blank" rel="noopener">Buy on Etsy</a></div></div></article>`;
+const genCard=x=>`<article class="pcard"><div class="pimg"><span class="badge gold">Free</span>${media(x)}</div>
+ <div class="pbody"><h3>${x.n}</h3><p>${x.d}</p>
+ ${x.url?`<a class="btn btn-gold" href="${x.url}">Open generator</a>`:`<span class="btn btn-soon">Coming soon</span>`}</div></article>`;
+
+document.getElementById('collGrid').innerHTML=coll.map(collCard).join('');
+document.getElementById('genGrid').innerHTML=gens.map(genCard).join('');
+document.getElementById('bundleGrid').innerHTML=bundles.map(prodCard).join('');
+document.getElementById('tabs').innerHTML=cats.map(c=>`<button data-k="${c.k}">${c.n}</button>`).join('');
+document.getElementById('tabs').addEventListener('click',e=>{const b=e.target.closest('button');if(b)filter(b.dataset.k)});
+function filter(k){
+  document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.k===k));
+  document.getElementById('catGrid').innerHTML=products.filter(p=>k==='all'||p.c===k).map(prodCard).join('');
+}
+filter('all');
+document.getElementById('y').textContent=new Date().getFullYear();
+document.querySelectorAll('#menu a').forEach(a=>a.addEventListener('click',()=>document.getElementById('menu').classList.remove('open')));
+</script>
+</body>
+</html>
