@@ -167,7 +167,7 @@ footer a:hover{color:var(--gold)}
       <a href="#collection">Bottle Boxes</a>
       <a href="#generators">Free Generators</a>
       <a href="#catalog">Catalog</a>
-      <a href="#bundles">Bundles</a>
+      <a href="#handmade">Handmade</a>
       <a href="#about">About</a>
       <a href="#faq">FAQ</a>
     </nav>
@@ -239,19 +239,19 @@ footer a:hover{color:var(--gold)}
   <div class="wrap">
     <span class="eyebrow">Shop</span>
     <h2>Laser cut files</h2>
-    <p class="sub">Every file includes DXF (legacy and modern), SVG and AI formats, plus a README with assembly notes.</p>
+    <p class="sub">Instant-download SVG and DXF files, tested on my own laser. Each button opens the listing on Etsy, where you pay and download.</p>
     <div class="tabs" id="tabs"></div>
     <div class="coll" id="catGrid"></div>
   </div>
 </section>
 
-<!-- BUNDLES -->
-<section id="bundles" style="padding-top:0">
+<!-- HANDMADE -->
+<section id="handmade" style="padding-top:0">
   <div class="wrap">
-    <span class="eyebrow">Save more</span>
-    <h2>Bundles</h2>
-    <p class="sub">All the sizes and variants in one download.</p>
-    <div class="coll" id="bundleGrid"></div>
+    <span class="eyebrow">Made in my London workshop</span>
+    <h2>Handmade wooden gifts</h2>
+    <p class="sub">Finished pieces, cut, engraved and assembled by me, posted to your door.</p>
+    <div class="coll" id="madeGrid"></div>
   </div>
 </section>
 
@@ -263,7 +263,7 @@ footer a:hover{color:var(--gold)}
     <p class="sub">Designed and drawn in my London workshop, with the details that save you wasted plywood.</p>
     <div class="why">
       <div><svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg><h3>Precise fit</h3><p>Finger joints and slots are designed with kerf compensation, so parts press together without glue gaps.</p></div>
-      <div><svg class="ico" viewBox="0 0 24 24"><path d="M3 7l9-4 9 4-9 4zM3 7v10l9 4 9-4V7M12 11v10"/></svg><h3>Complete package</h3><p>Each ZIP includes DXF (legacy and modern), SVG and AI files, a README and a clear licence.</p></div>
+      <div><svg class="ico" viewBox="0 0 24 24"><path d="M3 7l9-4 9 4-9 4zM3 7v10l9 4 9-4V7M12 11v10"/></svg><h3>Complete package</h3><p>Files come with SVG and DXF formats, assembly notes and a clear licence.</p></div>
       <div><svg class="ico" viewBox="0 0 24 24"><path d="M4 20l6-6M14 4l6 6-8 8-6-6z"/></svg><h3>Clean layers</h3><p>Red means cut and black means engrave. Import into LightBurn, check, and start the job.</p></div>
       <div><svg class="ico" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="1"/><path d="M4 9h5V4"/></svg><h3>Fits small lasers</h3><p>The parts are laid out for a 400 × 400 mm bed, so they work on popular diode machines.</p></div>
       <div><svg class="ico" viewBox="0 0 24 24"><path d="M3 8h18M3 12h18M3 16h18"/></svg><h3>Any thickness</h3><p>The files are drawn for 3 mm plywood, and the generators support 3–6 mm.</p></div>
@@ -323,7 +323,7 @@ footer a:hover{color:var(--gold)}
         <div class="logo" style="color:#fff;margin-bottom:12px"><span class="logo-mark" style="background:#2c3a30"><svg width="20" height="20" viewBox="0 0 64 64"><rect x="10" y="26" width="44" height="30" rx="2" fill="#d9b27c"/><rect x="6" y="14" width="52" height="13" rx="2" fill="#b88a52"/></svg></span>CNCWoodMakerDXF</div>
         <p>Laser cut files and free box generators, designed in London.</p>
       </div>
-      <div><h4>Shop</h4><ul><li><a href="#collection">Bottle boxes</a></li><li><a href="#catalog">Catalog</a></li><li><a href="#bundles">Bundles</a></li></ul></div>
+      <div><h4>Shop</h4><ul><li><a href="#collection">Bottle boxes</a></li><li><a href="#catalog">Catalog</a></li><li><a href="#handmade">Handmade</a></li></ul></div>
       <div><h4>Tools</h4><ul><li><a href="bottle-box.html">Bottle box generator</a></li><li><a href="#generators">All generators</a></li><li><a href="#faq">FAQ</a></li></ul></div>
       <div><h4>Follow</h4><ul>
         <li><a href="https://www.etsy.com/shop/CNCWoodMakerDXF" target="_blank" rel="noopener">Etsy</a></li>
@@ -356,31 +356,56 @@ const gens=[
  {n:"Ring Box",d:"A ring box with a removable, sliding or hinged lid. Perfect for proposals.",url:"ring-box.html",img:"ring-open",alt:"Laser cut plywood ring box with engraved heart lid and velvet insert"}
 ];
 
-// ✏️ Prices: check each against your Etsy listing. Add img:"file-name" when a photo is ready.
+// Real Etsy listings (prices in GBP). Each button opens that exact listing.
 const products=[
- {n:"Tarot Card Box",d:"Celestial engraving with sun, moon and stars.",p:"£4.99",c:"boxes",tag:"Bestseller"},
- {n:"Dice Box, Roll for Initiative",d:"Dragon engraving for D&D players.",p:"£4.99",c:"boxes",tag:"Popular"},
- {n:"Christmas Ornament Bundle",d:"6 ornament shapes ready to engrave.",p:"£5.99",c:"christmas",tag:"Christmas",red:1},
- {n:"Christ Pantocrator Wall Clock",d:"A detailed icon-style wall clock.",p:"£9.99",c:"religious",tag:"Premium",gold:1},
- {n:"Hinged Keepsake Box",d:"A Little Box of Happy Memories, 50×50×30 mm.",p:"£3.99",c:"boxes"},
- {n:"Personalised Jewelry Box",d:"Name engraving on the lid.",p:"£5.99",c:"boxes"},
- {n:"Jewelry Organizer Tray",d:"Compartments for rings and earrings.",p:"£2.99",c:"home"},
- {n:"Spice Rack",d:"Wall or counter rack in 3 sizes.",p:"£3.99",c:"home"},
- {n:"Card Box, Single Deck",d:"A snug fit for a standard deck.",p:"£2.99",c:"boxes"},
- {n:"Sliding Lid Box",d:"A classic box with a smooth sliding lid.",p:"£2.99",c:"boxes"},
- {n:"Integrated Hinge Box",d:"A laser-cut hinge with no hardware needed.",p:"£3.99",c:"boxes"},
- {n:"SDS Plus Drill Bit Organizer",d:"Holds SDS bits from small to large.",p:"£2.99",c:"home"},
- {n:"Teacher Gift Pencil Sign",d:"A personalised end-of-year gift.",p:"£3.99",c:"gifts"},
- {n:"First Communion Cross",d:"A delicate keepsake cross.",p:"£3.99",c:"religious"},
- {n:"Memorial Cross",d:"A remembrance cross with space for a name.",p:"£3.99",c:"religious"},
- {n:"Orthodox Crucifix",d:"A traditional Orthodox cross design.",p:"£3.99",c:"religious"}
+ {"n": "Santa Claus Gift Box", "d": "Layered Santa face lid with a living-hinge wall.", "p": "£3.59", "c": "christmas", "img": "p/santa", "url": "https://www.etsy.com/uk/listing/4618070775/santa-claus-gift-box-svg-dxf-layered"},
+ {"n": "Dice Box, Roll for Initiative", "d": "Dragon engraving and hexagonal slots for 7 dice.", "p": "£3.59", "c": "boxes", "img": "p/dice-box", "url": "https://www.etsy.com/uk/listing/4529982717/dice-box-laser-cut-file-dxf-svg-dd-rpg"},
+ {"n": "Dog Treats Sliding Box", "d": "Dog and cat engraving, sliding drawer, 250×180×100 mm.", "p": "£3.59", "c": "boxes", "img": "p/dog-treats-cat", "url": "https://www.etsy.com/uk/listing/4536739756/dog-treats-sliding-box-laser-cut-file"},
+ {"n": "Wedding Card Box", "d": "Floral engraving and a card slot, 350×250×250 mm.", "p": "£4.79", "c": "gifts", "img": "p/wedding-box", "url": "https://www.etsy.com/uk/listing/4535840069/personalized-wedding-card-box-svg-laser"},
+ {"n": "Tarot Card Box", "d": "Moon and stars mandala on a sliding lid.", "p": "£2.39", "c": "boxes", "img": "p/tarot", "url": "https://www.etsy.com/uk/listing/4528400492/tarot-card-box-svg-dxf-laser-cut-file"},
+ {"n": "Mountain Trail Box", "d": "Hinged box with a mountain engraving, 100×100×60 mm.", "p": "£2.39", "c": "boxes", "img": "p/mountain-trail", "url": "https://www.etsy.com/uk/listing/4613226680/mountain-trail-box-svg-dxf-laser-cut"},
+ {"n": "Teacher Pencil Sign", "d": "Personalised end-of-year teacher gift with a stand.", "p": "£2.39", "c": "gifts", "img": "p/teacher-svg", "url": "https://www.etsy.com/uk/listing/4533051394/personalized-teacher-pencil-svg-teacher"},
+ {"n": "SDS Plus Drill Bit Organizer", "d": "Four labelled compartments by bit size.", "p": "£3.59", "c": "home", "img": "p/sds-organizer", "url": "https://www.etsy.com/uk/listing/4532700279/sds-plus-drill-bit-organizer-laser-cut"},
+ {"n": "Harvest Basket Box", "d": "14-sided round box, 150×150×100 mm.", "p": "£2.39", "c": "boxes", "img": "p/harvest-basket", "url": "https://www.etsy.com/uk/listing/4609721026/harvest-basket-box-svg-dxf-laser-cut"},
+ {"n": "Integrated Hinge Box", "d": "Laser-cut hinge with no hardware needed.", "p": "£3.59", "c": "boxes", "img": "p/integrated-hinge", "url": "https://www.etsy.com/uk/listing/4527545825/integrated-hinge-box"},
+ {"n": "Playing Card Box Bundle", "d": "Single and double deck boxes in one download.", "p": "£5.99", "c": "boxes", "img": "p/card-bundle", "url": "https://www.etsy.com/uk/listing/4528346345/playing-card-box-bundle-laser-cut-dxf"},
+ {"n": "Playing Card Box, Single Deck", "d": "A snug sliding-lid box for one deck.", "p": "£3.59", "c": "boxes", "img": "p/card-single", "url": "https://www.etsy.com/uk/listing/4528089578/playing-card-box-laser-cut-file-dxf-svg"},
+ {"n": "Jewelry Organizer Tray", "d": "Six compartments for rings and earrings.", "p": "£2.39", "c": "home", "img": "p/jewelry-tray", "url": "https://www.etsy.com/uk/listing/4528053624/jewelry-organizer-tray-laser-cut-file"},
+ {"n": "Engraved Card Box, Wolf", "d": "Book-style card box with a wolf engraving.", "p": "£2.39", "c": "boxes", "img": "p/wolf-card", "url": "https://www.etsy.com/uk/listing/4600425015/playing-card-box-laser-cut-file-engraved"},
+ {"n": "Hinged Box", "d": "Finger-jointed gift box with a hinged lid.", "p": "£3.59", "c": "boxes", "img": "p/hinged-box", "url": "https://www.etsy.com/uk/listing/4527410208/hinge-box"},
+ {"n": "Spice Rack", "d": "Two tiers for six jars, fits a 300×200 mm bed.", "p": "£3.59", "c": "home", "img": "p/spice-rack", "url": "https://www.etsy.com/uk/listing/4526265068/spice-rack-laser-cut-file-dxf-svg-small"},
+ {"n": "Home Key Holder", "d": "Wall key rack with eight hooks.", "p": "£2.40", "c": "home", "img": "p/key-holder", "url": "https://www.etsy.com/uk/listing/4525714848/homekeyholderlasercutfile"},
+ {"n": "Coffee Pod Holder, Nespresso", "d": "Four-slot capsule holder for your coffee bar.", "p": "£3.59", "c": "home", "img": "p/nespresso", "url": "https://www.etsy.com/uk/listing/4525580564/coffee-pod-holder-for-nespresso-capsules"},
+ {"n": "Dog Phone Stand", "d": "French bulldog cut-out phone holder.", "p": "£2.39", "c": "gifts", "img": "p/dog-phone", "url": "https://www.etsy.com/uk/listing/4524781999/dog-phone-stand-svg-dxf-file-laser-cut"},
+ {"n": "Heart Shaped Box", "d": "Floral heart lid with a living-hinge wall.", "p": "£3.59", "c": "gifts", "img": "p/heart-box", "url": "https://www.etsy.com/uk/listing/4522535000/heart-shaped-laser-cut-box-svg-dxf-file"},
+ {"n": "Love You Heart Box", "d": "Simple heart box for wood, MDF or acrylic.", "p": "£2.39", "c": "gifts", "img": "p/love-you", "url": "https://www.etsy.com/uk/listing/4521955461/love-you-dxf-file-for-laser-cutting"},
+ {"n": "Puppy Drawer Box", "d": "Finger-joint drawer box, 150×80×50 mm.", "p": "£3.59", "c": "boxes", "img": "p/puppy-box", "url": "https://www.etsy.com/uk/listing/4594609015/laser-cut-box-dxf-svg-finger-joint-gift"},
+ {"n": "Dragon Dice Box", "d": "Dragon and D20 engraving for D&D players.", "p": "£3.59", "c": "boxes", "img": "p/dragon-dice", "url": "https://www.etsy.com/uk/listing/4531100991/dragon-dice-box-dxf-svg-laser-cut-files"},
+ {"n": "Dog Treats Box, Retriever", "d": "Sliding box with a golden retriever engraving.", "p": "£3.59", "c": "boxes", "img": "p/dog-treats-retriever", "url": "https://www.etsy.com/uk/listing/4537222294/dog-treats-sliding-box-dxf-laser-cut"},
+ {"n": "Sliding Lid Box", "d": "A classic box with a smooth sliding lid.", "p": "£3.59", "c": "boxes", "img": "p/sliding-lid", "url": "https://www.etsy.com/uk/listing/4529226556/sliding-lid-box-laser-cut-file-dxf-svg"},
+ {"n": "Dragon Bookmark", "d": "Engraved dragon wooden bookmark.", "p": "£1.32", "c": "gifts", "img": "p/dragon-bookmark", "url": "https://www.etsy.com/uk/listing/4586587854/dragon-bookmark-svg-dxf-laser-cut-wood"},
+ {"n": "Bird on Branch Bookmark", "d": "Engraved bookmark with a tassel hole.", "p": "£3.59", "c": "gifts", "img": "p/bird-bookmark", "url": "https://www.etsy.com/uk/listing/4585205761/bird-on-branch-svg-dxf-laser-cut-wood"},
+ {"n": "Tree Roots Bookmark", "d": "Detailed tree engraving bookmark.", "p": "£1.81", "c": "gifts", "img": "p/tree-bookmark", "url": "https://www.etsy.com/uk/listing/4571527615/wooden-bookmark-svg-dxf-file-tree-roots"},
+ {"n": "Fox Autumn Leaves Box", "d": "Hinged trinket box with a fox engraving.", "p": "£4.56", "c": "boxes", "img": "p/fox-box", "url": "https://www.etsy.com/uk/listing/4583901316/fox-autumn-leaves-hinged-box-svg-dxf"},
+ {"n": "Coffee Pod Holder, Dolce Gusto", "d": "Wall holder for 15 Dolce Gusto capsules.", "p": "£2.99", "c": "home", "img": "p/dolce-gusto", "url": "https://www.etsy.com/uk/listing/4525603876/coffee-pod-holder-for-dolce-gusto"},
+ {"n": "Cat Yarn Ball Box", "d": "Hinged trinket box with a kitten engraving.", "p": "£3.59", "c": "boxes", "img": "p/cat-box", "url": "https://www.etsy.com/uk/listing/4583693776/cat-yarn-ball-hinged-box-svg-dxf-laser"},
+ {"n": "Mountain Lake Wall Clock", "d": "Clock face with a lake and pine tree scene.", "p": "£1.92", "c": "home", "img": "p/lake-clock", "url": "https://www.etsy.com/uk/listing/4574405819/mountain-lake-wall-clock-svg-dxf-laser"},
+ {"n": "Flexible Hinge Card Box", "d": "Buffalo and poker engraving, flexible hinge.", "p": "£2.39", "c": "boxes", "img": "p/buffalo-card", "url": "https://www.etsy.com/uk/listing/4570871872/playing-card-box-laser-cut-file-flexible"},
+ {"n": "Playing Card Box, Double Deck", "d": "Two decks side by side under one sliding lid.", "p": "£3.59", "c": "boxes", "img": "p/card-double", "url": "https://www.etsy.com/uk/listing/4528341017/playing-card-box-laser-cut-file-dxf-svg"},
+ {"n": "Personalised Keepsake Box", "d": "Hinged jewelry box with a name panel.", "p": "£2.39", "c": "gifts", "img": "p/keepsake-name", "url": "https://www.etsy.com/uk/listing/4569109382/personalized-keepsake-box-svg-dxf-laser"},
+ {"n": "Little Box of Happy Memories", "d": "Hinged keepsake box with floral engraving.", "p": "£1.79", "c": "gifts", "img": "p/happy-memories", "url": "https://www.etsy.com/uk/listing/4568216312/little-box-of-happy-memories-svg-dxf"},
+ {"n": "Dog Treat Box", "d": "Sliding lid box with paw prints and a bone.", "p": "£3.59", "c": "boxes", "img": "p/dog-treat-box", "url": "https://www.etsy.com/uk/listing/4537837182/dog-treat-box-svg-dxf-sliding-lid-laser"},
+ {"n": "Christ Pantocrator Wall Clock", "d": "Byzantine icon clock face, 280 mm.", "p": "£9.59", "c": "religious", "img": "p/pantocrator", "url": "https://www.etsy.com/uk/listing/4559625601/christ-pantocrator-wooden-wall-clock"}
 ];
-const bundles=[
- {n:"Spice Rack Bundle",d:"All 3 sizes in one download.",p:"£8.99",tag:"Bundle"},
- {n:"Card Box Bundle",d:"Single and double deck boxes.",p:"£4.99",tag:"Bundle"},
- {n:"Christmas Ornament Bundle",d:"6 shapes for the festive season.",p:"£5.99",tag:"Christmas",red:1}
+const handmade=[
+ {"n": "Orthodox Wooden Wall Cross", "d": "Handmade engraved cross, 140×240 mm, ready to hang.", "p": "£12.00", "c": "handmade", "img": "p/orthodox-cross", "url": "https://www.etsy.com/uk/listing/4536608850/orthodox-wooden-wall-cross-christian", "made": 1},
+ {"n": "SDS Plus Drill Bit Box", "d": "Handmade workshop box with a sliding lid.", "p": "£25.00", "c": "handmade", "img": "p/sds-storage", "url": "https://www.etsy.com/uk/listing/4534363745/sds-plus-drill-bit-storage-box-wood", "made": 1},
+ {"n": "Personalised Teacher Pencil Sign", "d": "Handmade and engraved with your names.", "p": "£20.00", "c": "handmade", "img": "p/teacher-sign", "url": "https://www.etsy.com/uk/listing/4533015998/personalized-teacher-gift-wooden-pencil", "made": 1},
+ {"n": "Automatic Drink Dispenser", "d": "Handmade Arduino robot bartender for 5 glasses.", "p": "£80.00", "c": "handmade", "img": "p/drink-dispenser", "url": "https://www.etsy.com/uk/listing/4580886527/handmade-wooden-automatic-drink", "made": 1},
+ {"n": "Little Box of Happy Memories", "d": "Handmade engraved keepsake box.", "p": "£10.00", "c": "handmade", "img": "p/happy-memories-made", "url": "https://www.etsy.com/uk/listing/4561975903/a-little-box-of-happy-memories-wooden", "made": 1},
+ {"n": "Christ Pantocrator Wall Clock", "d": "Handmade engraved wall clock.", "p": "£49.99", "c": "handmade", "img": "p/pantocrator-made", "url": "https://www.etsy.com/uk/listing/4561021907/jesus-christ-pantocrator-wooden-wall", "made": 1}
 ];
-const cats=[{k:"all",n:"All files"},{k:"boxes",n:"Boxes"},{k:"christmas",n:"Christmas"},{k:"religious",n:"Religious & Memorial"},{k:"home",n:"Home & Organizers"},{k:"gifts",n:"Gifts"}];
+const cats=[{k:"all",n:"All files"},{k:"boxes",n:"Boxes"},{k:"gifts",n:"Gifts"},{k:"home",n:"Home & Kitchen"},{k:"christmas",n:"Christmas"},{k:"religious",n:"Religious"}];
 
 const esc=s=>s.replace(/&/g,"&amp;").replace(/</g,"&lt;");
 const media=x=>x.img
@@ -393,14 +418,14 @@ const collCard=x=>`<article class="pcard"><div class="pimg">${badge(x)}${media(x
  <div class="prow"><span class="price">Free</span><a class="btn btn-dark" href="bottle-box.html">Design it →</a></div></div></article>`;
 const prodCard=x=>`<article class="pcard"><div class="pimg">${badge(x)}${media(x)}</div>
  <div class="pbody"><h3>${x.n}</h3><p>${x.d}</p>
- <div class="prow"><span class="price"><small>from</small>${x.p}</span><a class="btn btn-dark" href="${x.url||ETSY}" target="_blank" rel="noopener">Buy on Etsy</a></div></div></article>`;
+ <div class="prow"><span class="price">${x.p}</span><a class="btn btn-dark" href="${x.url||ETSY}" target="_blank" rel="noopener">Buy on Etsy</a></div></div></article>`;
 const genCard=x=>`<article class="pcard"><div class="pimg"><span class="badge gold">Free</span>${media(x)}</div>
  <div class="pbody"><h3>${x.n}</h3><p>${x.d}</p>
  ${x.url?`<a class="btn btn-gold" href="${x.url}">Open generator</a>`:`<span class="btn btn-soon">Coming soon</span>`}</div></article>`;
 
 document.getElementById('collGrid').innerHTML=coll.map(collCard).join('');
 document.getElementById('genGrid').innerHTML=gens.map(genCard).join('');
-document.getElementById('bundleGrid').innerHTML=bundles.map(prodCard).join('');
+document.getElementById('madeGrid').innerHTML=handmade.map(prodCard).join('');
 document.getElementById('tabs').innerHTML=cats.map(c=>`<button data-k="${c.k}">${c.n}</button>`).join('');
 document.getElementById('tabs').addEventListener('click',e=>{const b=e.target.closest('button');if(b)filter(b.dataset.k)});
 function filter(k){
