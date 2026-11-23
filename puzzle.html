@@ -265,6 +265,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     <section class="card">
       <h2>4. Экспорт для LightBurn</h2>
       <div class="exp">
+        <button class="pri" id="btnZip" data-notr style="grid-column:1/-1;font-weight:700">⬇ ZIP: SVG + DXF + AI + README + LICENSE</button>
         <button class="pri" id="btnSvg">Скачать SVG</button>
         <button class="pri" id="btnDxf">Скачать DXF</button>
         <button id="btnCutSvg">Только резка — SVG</button>
@@ -1183,7 +1184,7 @@ function paramsInSync(){
 function canExport(){ return !!(S.puzzle && S.check && !S.check.errors.length && !S.pending && !S.exporting && paramsInSync()); }
 function updateExportUI(){
   const ok = canExport(), k = engraveKind();
-  ['btnSvg', 'btnDxf', 'btnCutSvg', 'btnCutDxf', 'btnPng'].forEach(id => { $(id).disabled = !ok; });
+  ['btnZip', 'btnSvg', 'btnDxf', 'btnCutSvg', 'btnCutDxf', 'btnPng'].forEach(id => { if ($(id)) $(id).disabled = !ok; });
   $('btnPng').hidden = k !== 'raster';
   $('btnDxf').textContent = k === 'raster' ? 'Скачать DXF + PNG (ZIP)' : 'Скачать DXF';
   const notes = {
@@ -1539,5 +1540,404 @@ $('btnTest').onclick = runSelfTest;
 /* ================= Старт ================= */
 regen(); syncAll();
 </script>
+<!--CWM_PACK:start-->
+<script>
+/* CWM_PACK v1 — CNCWoodMakerDXF download package (shared by the generators).
+ * One ZIP built from the CURRENT design at click time: SVG + DXF + AI (PDF-compatible) + README.txt + LICENSE.txt.
+ * Self-contained, no external libraries. API:
+ *   CWMPack.svgToAI(svgText, title) -> Promise<Uint8Array>
+ *   CWMPack.makeZip([{name, data: string|Uint8Array}]) -> Blob
+ *   CWMPack.download(blob, name)
+ *   CWMPack.build({ base, product, sheets:[{name, svg, dxf}], extras:[{name,data}], params:[[label,value]], notes:[...], steps:[...] }) -> Promise<{blob,name,files}>
+ */
+(function () {
+  'use strict';
+  if (window.CWMPack) return;
+  const enc = new TextEncoder();
+  const u8 = d => d instanceof Uint8Array ? d : (d instanceof ArrayBuffer ? new Uint8Array(d) : enc.encode(String(d)));
+
+  /* ---------------- ZIP (store, CRC-32) ---------------- */
+  const CRC = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+  function crc32(b) { let c = 0xFFFFFFFF; for (let i = 0; i < b.length; i++) c = CRC[(c ^ b[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+  function makeZip(files) {
+    const parts = [], central = []; let off = 0;
+    const d = new Date(), dt = ((d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1)) & 0xFFFF,
+      dd = (((d.getFullYear() - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate()) & 0xFFFF;
+    for (const f of files) {
+      const name = enc.encode(f.name), data = u8(f.data), crc = crc32(data);
+      const h = new DataView(new ArrayBuffer(30));
+      h.setUint32(0, 0x04034b50, true); h.setUint16(4, 20, true); h.setUint16(6, 0x0800, true); h.setUint16(8, 0, true);
+      h.setUint16(10, dt, true); h.setUint16(12, dd, true); h.setUint32(14, crc, true); h.setUint32(18, data.length, true); h.setUint32(22, data.length, true);
+      h.setUint16(26, name.length, true); h.setUint16(28, 0, true);
+      parts.push(new Uint8Array(h.buffer), name, data);
+      const c = new DataView(new ArrayBuffer(46));
+      c.setUint32(0, 0x02014b50, true); c.setUint16(4, 20, true); c.setUint16(6, 20, true); c.setUint16(8, 0x0800, true); c.setUint16(10, 0, true);
+      c.setUint16(12, dt, true); c.setUint16(14, dd, true); c.setUint32(16, crc, true); c.setUint32(20, data.length, true); c.setUint32(24, data.length, true);
+      c.setUint16(28, name.length, true); c.setUint32(42, off, true);
+      central.push(new Uint8Array(c.buffer), name);
+      off += 30 + name.length + data.length;
+    }
+    const csize = central.reduce((s, a) => s + a.length, 0), e = new DataView(new ArrayBuffer(22));
+    e.setUint32(0, 0x06054b50, true); e.setUint16(8, files.length, true); e.setUint16(10, files.length, true); e.setUint32(12, csize, true); e.setUint32(16, off, true);
+    return new Blob([...parts, ...central, new Uint8Array(e.buffer)], { type: 'application/zip' });
+  }
+  function download(blob, name) {
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000);
+  }
+
+  /* ---------------- helpers ---------------- */
+  async function deflate(bytes) {
+    if (typeof CompressionStream === 'undefined') return null;
+    const s = new Blob([bytes]).stream().pipeThrough(new CompressionStream('deflate'));
+    return new Uint8Array(await new Response(s).arrayBuffer());
+  }
+  const num = v => { if (!isFinite(v)) return '0'; const s = (Math.round(v * 1000) / 1000).toString(); return s === '-0' ? '0' : s; };
+  const TRANS = { 'А':'A','Б':'B','В':'V','Г':'G','Д':'D','Е':'E','Ё':'Yo','Ж':'Zh','З':'Z','И':'I','Й':'Y','К':'K','Л':'L','М':'M','Н':'N','О':'O','П':'P','Р':'R','С':'S','Т':'T','У':'U','Ф':'F','Х':'Kh','Ц':'Ts','Ч':'Ch','Ш':'Sh','Щ':'Sch','Ъ':'','Ы':'Y','Ь':'','Э':'E','Ю':'Yu','Я':'Ya','ă':'a','â':'a','î':'i','ș':'s','ş':'s','ț':'t','ţ':'t','Ă':'A','Â':'A','Î':'I','Ș':'S','Ş':'S','Ț':'T','Ţ':'T','—':'-','–':'-','×':'x','·':'.','…':'...','“':'"','”':'"','„':'"','’':"'",'‘':"'",'№':'No','°':'deg' };
+  function pdfText(s) { // WinAnsi-safe literal string
+    let o = '';
+    for (const ch of String(s)) {
+      let c = ch;
+      if (TRANS[c] !== undefined) c = TRANS[c];
+      else if (/[а-яё]/.test(c)) { const t = TRANS[c.toUpperCase()] || ''; c = t.toLowerCase(); }
+      for (const k of c) { const code = k.charCodeAt(0); o += code === 40 || code === 41 || code === 92 ? '\\' + k : (code >= 32 && code < 127 ? k : (code >= 160 && code < 256 ? '\\' + code.toString(8).padStart(3, '0') : '?')); }
+    }
+    return o;
+  }
+  function parseColor(c) { // computed style 'rgb(r, g, b)' | 'rgba(...)' | 'none'
+    if (!c || c === 'none' || c === 'transparent') return null;
+    const m = c.match(/rgba?\(([^)]+)\)/); if (!m) return null;
+    const v = m[1].split(/[ ,/]+/).filter(Boolean).map(parseFloat);
+    if (v.length > 3 && v[3] === 0) return null;
+    return [v[0] / 255, v[1] / 255, v[2] / 255];
+  }
+  const col = c => c.map(v => num(Math.min(1, Math.max(0, v)))).join(' ');
+
+  /* path data -> absolute segments [['M',x,y],['L',x,y],['C',x1,y1,x2,y2,x,y],['Z']] */
+  function parsePath(d) {
+    const tok = String(d).match(/[a-zA-Z]|[-+]?(?:\d*\.\d+|\d+\.?)(?:[eE][-+]?\d+)?/g) || [];
+    const out = []; let i = 0, cmd = '', x = 0, y = 0, sx = 0, sy = 0, lcx = 0, lcy = 0, lqx = 0, lqy = 0, prev = '';
+    const n = () => parseFloat(tok[i++]);
+    const isNum = () => i < tok.length && !/^[a-zA-Z]$/.test(tok[i]);
+    while (i < tok.length) {
+      if (/^[a-zA-Z]$/.test(tok[i])) cmd = tok[i++]; else if (!cmd) { i++; continue; }
+      const rel = cmd === cmd.toLowerCase(), C = cmd.toUpperCase();
+      if (C === 'Z') { out.push(['Z']); x = sx; y = sy; prev = 'Z'; continue; }
+      if (!isNum()) continue;
+      do {
+        if (C === 'M') { x = (rel ? x : 0) + n(); y = (rel ? y : 0) + n(); out.push(['M', x, y]); sx = x; sy = y; cmd = rel ? 'l' : 'L'; prev = 'M'; break; }
+        else if (C === 'L') { x = (rel ? x : 0) + n(); y = (rel ? y : 0) + n(); out.push(['L', x, y]); }
+        else if (C === 'H') { x = (rel ? x : 0) + n(); out.push(['L', x, y]); }
+        else if (C === 'V') { y = (rel ? y : 0) + n(); out.push(['L', x, y]); }
+        else if (C === 'C') { const a = [n(), n(), n(), n(), n(), n()]; if (rel) { a[0] += x; a[1] += y; a[2] += x; a[3] += y; a[4] += x; a[5] += y; } out.push(['C', ...a]); lcx = a[2]; lcy = a[3]; x = a[4]; y = a[5]; }
+        else if (C === 'S') { const a = [n(), n(), n(), n()]; if (rel) { a[0] += x; a[1] += y; a[2] += x; a[3] += y; } const r1 = /[CS]/.test(prev) ? [2 * x - lcx, 2 * y - lcy] : [x, y]; out.push(['C', r1[0], r1[1], ...a]); lcx = a[0]; lcy = a[1]; x = a[2]; y = a[3]; }
+        else if (C === 'Q' || C === 'T') {
+          let qx, qy, ex, ey;
+          if (C === 'Q') { qx = n(); qy = n(); ex = n(); ey = n(); if (rel) { qx += x; qy += y; ex += x; ey += y; } }
+          else { ex = n(); ey = n(); if (rel) { ex += x; ey += y; } if (/[QT]/.test(prev)) { qx = 2 * x - lqx; qy = 2 * y - lqy; } else { qx = x; qy = y; } }
+          out.push(['C', x + 2 / 3 * (qx - x), y + 2 / 3 * (qy - y), ex + 2 / 3 * (qx - ex), ey + 2 / 3 * (qy - ey), ex, ey]); lqx = qx; lqy = qy; x = ex; y = ey;
+        } else if (C === 'A') {
+          const rx = n(), ry = n(), rot = n(), la = n(), sw = n(); let ex = n(), ey = n(); if (rel) { ex += x; ey += y; }
+          arcToCubics(x, y, rx, ry, rot, la, sw, ex, ey).forEach(c => out.push(['C', ...c])); x = ex; y = ey;
+        } else { i++; }
+        prev = C;
+      } while (isNum());
+    }
+    return out;
+  }
+  function arcToCubics(x1, y1, rx, ry, phi, fa, fs, x2, y2) {
+    if (x1 === x2 && y1 === y2) return [];
+    rx = Math.abs(rx); ry = Math.abs(ry); if (!rx || !ry) return [[x1, y1, x2, y2, x2, y2]];
+    const p = phi * Math.PI / 180, cp = Math.cos(p), sp = Math.sin(p);
+    const dx = (x1 - x2) / 2, dy = (y1 - y2) / 2, x1p = cp * dx + sp * dy, y1p = -sp * dx + cp * dy;
+    let L = x1p * x1p / (rx * rx) + y1p * y1p / (ry * ry); if (L > 1) { L = Math.sqrt(L); rx *= L; ry *= L; }
+    const sgn = fa === fs ? -1 : 1, num_ = rx * rx * ry * ry - rx * rx * y1p * y1p - ry * ry * x1p * x1p, den = rx * rx * y1p * y1p + ry * ry * x1p * x1p;
+    const co = sgn * Math.sqrt(Math.max(0, num_ / den)), cxp = co * rx * y1p / ry, cyp = -co * ry * x1p / rx;
+    const cx = cp * cxp - sp * cyp + (x1 + x2) / 2, cy = sp * cxp + cp * cyp + (y1 + y2) / 2;
+    const ang = (ux, uy, vx, vy) => { const a = Math.atan2(ux * vy - uy * vx, ux * vx + uy * vy); return a; };
+    let t1 = ang(1, 0, (x1p - cxp) / rx, (y1p - cyp) / ry), dt = ang((x1p - cxp) / rx, (y1p - cyp) / ry, (-x1p - cxp) / rx, (-y1p - cyp) / ry);
+    if (!fs && dt > 0) dt -= 2 * Math.PI; else if (fs && dt < 0) dt += 2 * Math.PI;
+    const segs = Math.ceil(Math.abs(dt) / (Math.PI / 2)), d = dt / segs, k = 4 / 3 * Math.tan(d / 4), res = [];
+    const pt = t => [cx + rx * Math.cos(t) * cp - ry * Math.sin(t) * sp, cy + rx * Math.cos(t) * sp + ry * Math.sin(t) * cp];
+    const dv = t => [-rx * Math.sin(t) * cp - ry * Math.cos(t) * sp, -rx * Math.sin(t) * sp + ry * Math.cos(t) * cp];
+    for (let s = 0; s < segs; s++) {
+      const a = t1 + s * d, b = a + d, P0 = pt(a), P3 = pt(b), D0 = dv(a), D3 = dv(b);
+      res.push([P0[0] + k * D0[0], P0[1] + k * D0[1], P3[0] - k * D3[0], P3[1] - k * D3[1], P3[0], P3[1]]);
+    }
+    if (res.length) { res[res.length - 1][4] = x2; res[res.length - 1][5] = y2; }
+    return res;
+  }
+  function shapeSegs(el) {
+    const tag = el.localName, A = n => parseFloat(el.getAttribute(n)) || 0;
+    if (tag === 'path') return parsePath(el.getAttribute('d') || '');
+    if (tag === 'line') return [['M', A('x1'), A('y1')], ['L', A('x2'), A('y2')]];
+    if (tag === 'polyline' || tag === 'polygon') {
+      const v = (el.getAttribute('points') || '').trim().split(/[\s,]+/).map(parseFloat); const s = [];
+      for (let i = 0; i + 1 < v.length; i += 2) s.push([i ? 'L' : 'M', v[i], v[i + 1]]);
+      if (tag === 'polygon' && s.length) s.push(['Z']); return s;
+    }
+    if (tag === 'rect') {
+      const x = A('x'), y = A('y'), w = A('width'), h = A('height'); if (w <= 0 || h <= 0) return [];
+      let rx = el.hasAttribute('rx') ? A('rx') : A('ry'), ry = el.hasAttribute('ry') ? A('ry') : rx; rx = Math.min(rx, w / 2); ry = Math.min(ry, h / 2);
+      if (!rx || !ry) return [['M', x, y], ['L', x + w, y], ['L', x + w, y + h], ['L', x, y + h], ['Z']];
+      return parsePath(`M${x + rx} ${y}H${x + w - rx}A${rx} ${ry} 0 0 1 ${x + w} ${y + ry}V${y + h - ry}A${rx} ${ry} 0 0 1 ${x + w - rx} ${y + h}H${x + rx}A${rx} ${ry} 0 0 1 ${x} ${y + h - ry}V${y + ry}A${rx} ${ry} 0 0 1 ${x + rx} ${y}Z`);
+    }
+    if (tag === 'circle' || tag === 'ellipse') {
+      const cx = A('cx'), cy = A('cy'), rx = tag === 'circle' ? A('r') : A('rx'), ry = tag === 'circle' ? A('r') : A('ry'); if (rx <= 0 || ry <= 0) return [];
+      return parsePath(`M${cx + rx} ${cy}A${rx} ${ry} 0 0 1 ${cx - rx} ${cy}A${rx} ${ry} 0 0 1 ${cx + rx} ${cy}Z`);
+    }
+    return [];
+  }
+
+  /* ---------------- SVG -> AI (PDF 1.5, layers = optional content groups) ---------------- */
+  async function svgToAI(svgText, title) {
+    const doc = new DOMParser().parseFromString(svgText, 'image/svg+xml');
+    if (doc.getElementsByTagName('parsererror').length) throw new Error('SVG parse error');
+    const host = document.createElement('div');
+    host.style.cssText = 'position:fixed;left:-20000px;top:0;width:1000px;height:1000px;overflow:hidden;opacity:0;pointer-events:none';
+    document.body.appendChild(host);
+    try {
+      const root = document.importNode(doc.documentElement, true);
+      host.appendChild(root);
+      const mm = v => { const m = String(v || '').match(/^([\d.]+)\s*(mm|cm|in|pt|px)?$/); if (!m) return null; const k = { mm: 1, cm: 10, in: 25.4, pt: 25.4 / 72, px: 25.4 / 96 }[m[2] || 'px']; return parseFloat(m[1]) * k; };
+      const vb = (root.getAttribute('viewBox') || '').trim().split(/[\s,]+/).map(parseFloat);
+      let Wmm = mm(root.getAttribute('width')), Hmm = mm(root.getAttribute('height'));
+      const hasVB = vb.length === 4 && vb[2] > 0 && vb[3] > 0;
+      if (!Wmm) Wmm = hasVB ? vb[2] : 210; if (!Hmm) Hmm = hasVB ? vb[3] : 297;
+      const V = hasVB ? vb : [0, 0, Wmm, Hmm];
+      // keep the root rendered at its own size so getScreenCTM is meaningful
+      root.setAttribute('width', V[2]); root.setAttribute('height', V[3]); root.setAttribute('viewBox', V.join(' '));
+      host.style.width = V[2] + 'px'; host.style.height = V[3] + 'px';
+      const K = 72 / 25.4, Wpt = Wmm * K, Hpt = Hmm * K, sx = Wmm / V[2] * K, sy = Hmm / V[3] * K;
+      const rootInv = root.getScreenCTM().inverse();
+      const matOf = el => { const m = rootInv.multiply(el.getScreenCTM()); return [m.a, m.b, m.c, m.d, m.e, m.f]; };
+      const P = (M, x, y) => { const u = M[0] * x + M[2] * y + M[4], v = M[1] * x + M[3] * y + M[5]; return [(u - V[0]) * sx, Hpt - (v - V[1]) * sy]; };
+      const segOps = (M, segs) => {
+        let o = '';
+        for (const s of segs) {
+          if (s[0] === 'M') { const p = P(M, s[1], s[2]); o += num(p[0]) + ' ' + num(p[1]) + ' m\n'; }
+          else if (s[0] === 'L') { const p = P(M, s[1], s[2]); o += num(p[0]) + ' ' + num(p[1]) + ' l\n'; }
+          else if (s[0] === 'C') { const a = P(M, s[1], s[2]), b = P(M, s[3], s[4]), c = P(M, s[5], s[6]); o += [a, b, c].map(p => num(p[0]) + ' ' + num(p[1])).join(' ') + ' c\n'; }
+          else o += 'h\n';
+        }
+        return o;
+      };
+      const layers = [], images = [], warn = new Set();
+      let content = '', imgN = 0;
+      const mctx = document.createElement('canvas').getContext('2d');
+      const clipFor = (el, M) => {
+        const cp = getComputedStyle(el).clipPath; const m = cp && cp.match(/url\(["']?#([^"')]+)/); if (!m) return '';
+        const c = root.querySelector('#' + CSS.escape(m[1])); if (!c) return '';
+        let o = ''; c.querySelectorAll('path,rect,circle,ellipse,polygon,polyline').forEach(s => { o += segOps(M, shapeSegs(s)); });
+        return o ? 'q\n' + o + 'W n\n' : '';
+      };
+      const SKIP = new Set(['defs', 'clipPath', 'mask', 'title', 'desc', 'metadata', 'symbol', 'style', 'pattern', 'marker', 'linearGradient', 'radialGradient', 'filter', 'script']);
+      async function walk(el) {
+        for (const ch of Array.from(el.children)) {
+          const tag = ch.localName; if (SKIP.has(tag)) continue;
+          const cs = getComputedStyle(ch); if (cs.display === 'none' || cs.visibility === 'hidden') continue;
+          let M; try { M = matOf(ch); } catch (e) { continue; }
+          const clip = clipFor(ch, M); content += clip;
+          if (tag === 'g' || tag === 'svg' || tag === 'a' || tag === 'switch') await walk(ch);
+          else if (tag === 'image') await drawImage(ch, M);
+          else if (tag === 'text') drawText(ch, M, cs);
+          else if (tag === 'use') warn.add('use');
+          else {
+            const segs = shapeSegs(ch); if (!segs.length) { if (clip) content += 'Q\n'; continue; }
+            const fill = parseColor(cs.fill), stroke = parseColor(cs.stroke), eo = cs.fillRule === 'evenodd';
+            if (!fill && !stroke) { if (clip) content += 'Q\n'; continue; }
+            let o = '';
+            if (fill) o += col(fill) + ' rg\n';
+            if (stroke) { const sc = Math.sqrt(Math.abs(M[0] * M[3] - M[1] * M[2])) * (sx + sy) / 2; o += col(stroke) + ' RG\n' + num(Math.max(0.01, (parseFloat(cs.strokeWidth) || 1) * sc)) + ' w\n'; }
+            o += segOps(M, segs) + (fill && stroke ? (eo ? 'B*' : 'B') : fill ? (eo ? 'f*' : 'f') : 'S') + '\n';
+            content += o;
+          }
+          if (clip) content += 'Q\n';
+        }
+      }
+      function drawText(el, M, cs) {
+        let txt = (el.textContent || '').replace(/\s+/g, ' ').trim(); if (!txt) return; try { if (window.CWM_T) txt = window.CWM_T(txt, 'en'); } catch (e) { }
+        const fill = parseColor(cs.fill) || parseColor(cs.stroke) || [0, 0, 0];
+        const fs = parseFloat(cs.fontSize) || 3, A = n => parseFloat(el.getAttribute(n)) || 0;
+        let x = A('x'), y = A('y');
+        mctx.font = `${fs * 10}px Helvetica, Arial, sans-serif`; const w = mctx.measureText(txt).width / 10;
+        const anchor = cs.textAnchor || el.getAttribute('text-anchor'); if (anchor === 'middle') x -= w / 2; else if (anchor === 'end') x -= w;
+        const db = el.getAttribute('dominant-baseline') || cs.dominantBaseline; if (db === 'middle' || db === 'central') y += fs * 0.35; else if (db === 'hanging' || db === 'text-before-edge') y += fs * 0.75;
+        const p = P(M, x, y), e1 = P(M, x + 1, y), ux = e1[0] - p[0], uy = e1[1] - p[1], L = Math.hypot(ux, uy) || 1, s = fs * L;
+        content += `BT\n${col(fill)} rg\n/F1 1 Tf\n${num(ux / L * s)} ${num(uy / L * s)} ${num(-uy / L * s)} ${num(ux / L * s)} ${num(p[0])} ${num(p[1])} Tm\n(${pdfText(txt)}) Tj\nET\n`;
+      }
+      async function drawImage(el, M) {
+        const href = el.getAttribute('href') || el.getAttributeNS('http://www.w3.org/1999/xlink', 'href'); if (!href) return;
+        const A = n => parseFloat(el.getAttribute(n)) || 0; let x = A('x'), y = A('y'), w = A('width'), h = A('height'); if (w <= 0 || h <= 0) return;
+        const img = new Image(); img.src = href;
+        try { await img.decode(); } catch (e) { warn.add('image'); return; }
+        const par = (el.getAttribute('preserveAspectRatio') || 'xMidYMid meet').trim();
+        if (par !== 'none' && img.naturalWidth && img.naturalHeight) {
+          const ir = img.naturalWidth / img.naturalHeight, slice = /slice/.test(par);
+          let nw = w, nh = h; if ((w / h > ir) !== slice) nw = h * ir; else nh = w / ir;
+          if (!slice) { x += (w - nw) / 2; y += (h - nh) / 2; w = nw; h = nh; }
+        }
+        let pw = img.naturalWidth || 1, ph = img.naturalHeight || 1; const sc = Math.min(1, 4000 / Math.max(pw, ph)); pw = Math.max(1, Math.round(pw * sc)); ph = Math.max(1, Math.round(ph * sc));
+        const cv = document.createElement('canvas'); cv.width = pw; cv.height = ph; const c2 = cv.getContext('2d');
+        c2.fillStyle = '#fff'; c2.fillRect(0, 0, pw, ph); c2.drawImage(img, 0, 0, pw, ph);
+        let px; try { px = c2.getImageData(0, 0, pw, ph).data; } catch (e) { warn.add('image'); return; }
+        const rgb = new Uint8Array(pw * ph * 3); for (let i = 0, j = 0; i < px.length; i += 4) { rgb[j++] = px[i]; rgb[j++] = px[i + 1]; rgb[j++] = px[i + 2]; }
+        const z = await deflate(rgb), name = 'Im' + (imgN++);
+        images.push({ name, w: pw, h: ph, data: z || rgb, flate: !!z });
+        const p00 = P(M, x, y + h), p10 = P(M, x + w, y + h), p01 = P(M, x, y);
+        content += `q\n${num(p10[0] - p00[0])} ${num(p10[1] - p00[1])} ${num(p01[0] - p00[0])} ${num(p01[1] - p00[1])} ${num(p00[0])} ${num(p00[1])} cm\n/${name} Do\nQ\n`;
+      }
+      // top-level groups become layers
+      for (const ch of Array.from(root.children)) {
+        const tag = ch.localName; if (SKIP.has(tag)) continue;
+        if (tag === 'g') {
+          const name = ch.getAttributeNS('http://www.inkscape.org/namespaces/inkscape', 'label') || ch.getAttribute('inkscape:label') || ch.id || ('Layer ' + (layers.length + 1));
+          const cs = getComputedStyle(ch); if (cs.display === 'none') continue;
+          const idx = layers.length; layers.push(name);
+          content += `/OC /oc${idx} BDC\n`; let M; try { M = matOf(ch); } catch (e) { M = null; }
+          const clip = M ? clipFor(ch, M) : ''; content += clip; await walk(ch); if (clip) content += 'Q\n'; content += 'EMC\n';
+        } else await walk({ children: [ch] });
+      }
+      /* ---- write PDF ---- */
+      const objs = []; const add = s => { objs.push(s); return objs.length; };
+      const catalogN = add(null), pagesN = add(null), pageN = add(null), fontN = add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>');
+      const ocN = layers.map(n => add(`<< /Type /OCG /Name (${pdfText(n)}) >>`));
+      const imgObj = images.map(im => add({ dict: `<< /Type /XObject /Subtype /Image /Width ${im.w} /Height ${im.h} /ColorSpace /DeviceRGB /BitsPerComponent 8${im.flate ? ' /Filter /FlateDecode' : ''} /Length ${im.data.length} >>`, data: im.data }));
+      const cRaw = enc.encode(content), cz = await deflate(cRaw);
+      const contN = add({ dict: `<< /Length ${(cz || cRaw).length}${cz ? ' /Filter /FlateDecode' : ''} >>`, data: cz || cRaw });
+      const infoN = add(`<< /Title (${pdfText(title || 'CNCWoodMakerDXF')}) /Creator (CNCWoodMakerDXF generator) /Producer (CNCWoodMakerDXF) >>`);
+      const ocRefs = ocN.map(n => n + ' 0 R').join(' ');
+      objs[catalogN - 1] = `<< /Type /Catalog /Pages ${pagesN} 0 R${layers.length ? ` /OCProperties << /OCGs [${ocRefs}] /D << /Order [${ocRefs}] /ON [${ocRefs}] >> >>` : ''} >>`;
+      objs[pagesN - 1] = `<< /Type /Pages /Kids [${pageN} 0 R] /Count 1 >>`;
+      objs[pageN - 1] = `<< /Type /Page /Parent ${pagesN} 0 R /MediaBox [0 0 ${num(Wpt)} ${num(Hpt)}] /TrimBox [0 0 ${num(Wpt)} ${num(Hpt)}] /Contents ${contN} 0 R /Resources << /Font << /F1 ${fontN} 0 R >>${images.length ? ' /XObject << ' + images.map((im, i) => `/${im.name} ${imgObj[i]} 0 R`).join(' ') + ' >>' : ''}${layers.length ? ' /Properties << ' + ocN.map((n, i) => `/oc${i} ${n} 0 R`).join(' ') + ' >>' : ''} >> >>`;
+      const chunks = []; let len = 0; const offs = [];
+      const push = b => { const x = typeof b === 'string' ? latin1(b) : b; chunks.push(x); len += x.length; };
+      function latin1(s) { const a = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) a[i] = s.charCodeAt(i) & 255; return a; }
+      push('%PDF-1.5\n%\xE2\xE3\xCF\xD3\n');
+      objs.forEach((o, i) => { offs.push(len); push(`${i + 1} 0 obj\n`); if (typeof o === 'string') push(o + '\n'); else { push(o.dict + '\nstream\n'); push(o.data); push('\nendstream\n'); } push('endobj\n'); });
+      const xref = len; push(`xref\n0 ${objs.length + 1}\n0000000000 65535 f \n` + offs.map(o => String(o).padStart(10, '0') + ' 00000 n \n').join(''));
+      push(`trailer\n<< /Size ${objs.length + 1} /Root ${catalogN} 0 R /Info ${infoN} 0 R >>\nstartxref\n${xref}\n%%EOF\n`);
+      const out = new Uint8Array(len); let p = 0; for (const c of chunks) { out.set(c, p); p += c.length; }
+      out.warnings = [...warn];
+      return out;
+    } finally { host.remove(); }
+  }
+
+  /* ---------------- README + LICENSE (English, built from the current design) ---------------- */
+  const SHOP = 'CNCWoodMakerDXF', CONTACT = 'Etsy: CNCWoodMakerDXF · cncwoodmakerdxf.com · Instagram @cncwoodmaker · TikTok @cnc.wood.maker';
+  function layerInfo(svg) {
+    const res = []; const re = /<g\b[^>]*\bid="([^"]+)"[^>]*>/g; let m;
+    while ((m = re.exec(svg))) { const tag = m[0], st = (tag.match(/stroke="(#[0-9a-fA-F]{3,6})"/) || [])[1], fi = (tag.match(/fill="(#[0-9a-fA-F]{3,6})"/) || [])[1]; res.push([m[1], st || fi || '']); }
+    const seen = new Set(); return res.filter(([n]) => !seen.has(n) && seen.add(n) && /^[A-Z][A-Z0-9_]*$/.test(n));
+  }
+  const LAYER_HELP = { CUT: 'cut lines', CUT_INNER: 'inner cuts (holes, slots, joints) – cut FIRST', CUT_OUTER: 'outer contours – cut LAST', ENGRAVE: 'engraving', ENGRAVE_FILL: 'fill engraving', ENGRAVE_LINE: 'line engraving / scoring', ENGRAVE_IMAGE: 'image engraving', MARK: 'reference marks / labels – do NOT cut', INFO: 'information – do NOT cut', LABELS: 'labels – do NOT cut', FOAM_CUT: 'insert template – cut from foam, not plywood', VELVET_CUT: 'insert template – cut from velvet/fabric' };
+  function sheetSize(svg) { const w = (svg.match(/<svg\b[^>]*\bwidth="([\d.]+)mm"/) || [])[1], h = (svg.match(/<svg\b[^>]*\bheight="([\d.]+)mm"/) || [])[1]; return w && h ? `${+(+w).toFixed(1)} × ${+(+h).toFixed(1)} mm` : ''; }
+  function readmeText(o, files) {
+    const L = [], line = '='.repeat(Math.max(20, (SHOP + ' — ' + o.product).length));
+    L.push(`${SHOP} — ${o.product}`, line, '', `Generated: ${new Date().toISOString().slice(0, 16).replace('T', ' ')} UTC`, 'Units: millimetres, scale 1:1. Files are not scaled.', '');
+    if (o.params && o.params.length) { L.push('YOUR BUILD SETTINGS', '-------------------'); const w = Math.max(...o.params.map(p => String(p[0]).length)); o.params.forEach(([k, v]) => L.push(`  ${String(k).padEnd(w)} : ${v}`)); L.push(''); }
+    L.push('FILES', '-----');
+    files.forEach(f => { let d = ''; if (/\.svg$/i.test(f.name)) d = 'SVG – LightBurn, Inkscape, xTool, Glowforge (vector, 1:1 mm)'; else if (/\.dxf$/i.test(f.name)) d = 'DXF – CAD/CNC, LightBurn (mm)'; else if (/\.ai$/i.test(f.name)) d = 'AI – Adobe Illustrator (PDF-compatible; also opens in LightBurn, CorelDRAW, Inkscape)'; else if (/\.png$/i.test(f.name)) d = 'PNG – raster engraving image'; else if (/\.json$/i.test(f.name)) d = 'project settings (re-open in the generator)'; else if (/README/i.test(f.name)) d = 'this file'; else if (/LICEN/i.test(f.name)) d = 'terms of use'; else d = 'extra file'; L.push(`  ${f.name}${d ? '  –  ' + d : ''}`); });
+    L.push('');
+    const sheets = (o.sheets || []).filter(s => s.svg);
+    if (sheets.length) { L.push('SHEETS', '------'); sheets.forEach(s => L.push(`  ${s.name}: ${sheetSize(s.svg) || '—'}`)); L.push(''); }
+    const lay = sheets.length ? layerInfo(sheets.map(s => s.svg).join('\n')) : [];
+    if (lay.length) { L.push('LAYERS (same names and colours in SVG, DXF and AI)', '--------------------------------------------------'); lay.forEach(([n, c]) => L.push(`  ${n.padEnd(14)} ${c.padEnd(8)} ${LAYER_HELP[n] || ''}`)); L.push('  Layer names do NOT set the laser mode: check Line/Fill/Image, power and speed for every layer.', ''); }
+    if (o.steps && o.steps.length) { L.push('HOW TO MAKE IT', '--------------'); o.steps.forEach((s, i) => L.push(`  ${i + 1}. ${s}`)); L.push(''); }
+    L.push('TIPS', '----');
+    (o.notes || []).concat([o.kerfDone ? 'Cut the fit test first: plywood thickness varies.' : 'Cut a small test piece first: plywood thickness varies, check the fit and adjust kerf/offset in your software.', 'No laser settings are stored in the files – power and speed depend on your machine and material.', 'Cut inner shapes before outer contours (LightBurn: Optimization → "Cut inner shapes first").']).forEach(n => L.push('  • ' + n));
+    L.push('', `Questions? ${CONTACT}`, '');
+    return L.join('\r\n');
+  }
+  function licenseText(product) {
+    const y = new Date().getFullYear();
+    return [`LICENSE — ${product}`, `© ${y} ${SHOP}. All rights reserved.`, '',
+      'By downloading or using these files (SVG, DXF, AI and the other files in this archive) you agree to the terms below.', '',
+      'YOU MAY:', '  - use the files for personal projects, as many times as you like;',
+      '  - laser/CNC cut and engrave physical items from these files and sell the finished physical items (own production, small business, craft fairs, online shops);',
+      '  - modify the files for your own projects (size, text, engraving).', '',
+      'YOU MAY NOT:', '  - resell, distribute, share, upload elsewhere or give away the digital files, original or modified, in whole or in part, in any format;',
+      '  - include the files in bundles, collections, design libraries or subscriptions;', '  - claim the design as your own.', '',
+      'The files are provided "as is". Cut the test pieces first and check sizes, fits and laser settings for your material. The author is not liable for material, equipment or cutting results.',
+      `For other uses (extended license, large-scale production) please contact ${SHOP}.`, `${CONTACT}`, ''].join('\r\n');
+  }
+
+  /* ---------------- current settings from the form (English labels via the site's translation layer) ---------------- */
+  function srcText(root, skipSel) {
+    let s = ''; const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    let n; while ((n = w.nextNode())) { const p = n.parentElement; if (p && skipSel && p.closest(skipSel) && p !== root && root.contains(p.closest(skipSel))) continue; s += (n.__s !== undefined ? n.__s : n.nodeValue) + ' '; }
+    return s;
+  }
+  const toEn = s => { s = String(s || '').replace(/\s+/g, ' ').trim(); try { if (window.CWM_T) s = window.CWM_T(s, 'en'); } catch (e) { } return s.replace(/\s+/g, ' ').replace(/\s*[:：]\s*$/, '').trim(); };
+  function formParams(roots, skip) {
+    const out = [], seen = new Set();
+    const list = (Array.isArray(roots) ? roots : [roots]).filter(Boolean);
+    for (const root of list) root.querySelectorAll('input,select').forEach(el => {
+      const type = (el.type || '').toLowerCase();
+      if (['hidden', 'file', 'button', 'submit', 'reset', 'range', 'color', 'image', 'password'].includes(type)) return;
+      if (el.closest('[data-cwm-noreadme],.cwm-lang,[hidden]') || (skip && el.matches(skip))) return;
+      for (let a = el; a && a !== root.parentElement; a = a.parentElement) { if (a.hidden || getComputedStyle(a).display === 'none') return; if (a === root) break; }
+      if (type === 'radio' && !el.checked) return;
+      let lab = el.closest('label') || (el.id && document.querySelector(`label[for="${CSS.escape(el.id)}"]`));
+      if (!lab && el.parentElement) { const sib = Array.from(el.parentElement.children).filter(c => c.tagName === 'LABEL'); if (sib.length === 1) lab = sib[0]; }
+      let name = lab ? srcText(lab, 'input,select,textarea,button,option,.hint,.ferr,small,.muted,.sub,output') : (el.getAttribute('aria-label') || el.title || el.name || el.id);
+      name = toEn(name).slice(0, 60); if (!name) return;
+      let val;
+      if (type === 'checkbox') val = el.checked ? 'yes' : 'no';
+      else if (type === 'radio') val = 'selected';
+      else if (el.tagName === 'SELECT') { const o = el.options[el.selectedIndex]; val = o ? toEn(srcText(o)) : ''; }
+      else { val = String(el.value).trim(); const u = el.nextElementSibling; if (val !== '' && u && u.classList && u.classList.contains('u')) val += ' ' + toEn(srcText(u)); }
+      if (val === '') return;
+      const key = name + '=' + val; if (seen.has(key)) return; seen.add(key);
+      out.push([name, val]);
+    });
+    return out;
+  }
+
+  /* ---------------- package builder ---------------- */
+  async function build(o) {
+    const files = [], warn = new Set();
+    for (const s of o.sheets) {
+      if (s.svg) files.push({ name: s.name + '.svg', data: s.svg });
+      if (s.dxf) files.push({ name: s.name + '.dxf', data: s.dxf });
+      if (s.svg && s.ai !== false) { const ai = await svgToAI(s.svg, s.name); (ai.warnings || []).forEach(w => warn.add(w)); files.push({ name: s.name + '.ai', data: ai }); }
+    }
+    (o.extras || []).forEach(f => files.push(f));
+    const docs = [{ name: 'README.txt', data: '' }, { name: 'LICENSE.txt', data: '' }];
+    docs[0].data = enc.encode('﻿' + readmeText(o, files.concat(docs)));
+    docs[1].data = enc.encode('﻿' + licenseText(o.product));
+    const all = files.concat(docs), name = (o.base || 'CNCWoodMakerDXF') + '.zip';
+    return { blob: makeZip(all), name, files: all, warnings: [...warn] };
+  }
+  window.CWMPack = { version: 1, svgToAI, makeZip, download, build, formParams, readmeText, licenseText, crc32, parsePath };
+})();
+
+</script>
+<script>
+(function(){
+
+function cwmBusy(btn, on) { if (!btn) return; if (on) { btn.dataset.cwmTxt = btn.textContent; btn.textContent = '⏳ Building ZIP…'; btn.disabled = true; } else { if (btn.dataset.cwmTxt) btn.textContent = btn.dataset.cwmTxt; btn.disabled = false; } }
+async function cwmRun(btn, job) { cwmBusy(btn, true); try { await job(); } catch (e) { console.error(e); alert('ZIP export failed: ' + (e && e.message || e)); } finally { cwmBusy(btn, false); } }
+
+
+$('btnZip').onclick = () => runExport(X => cwmRun(null, async () => {
+  const base = baseName(X), k = engraveKind(X), p = X.p, extras = [];
+  let dxf;
+  if (k === 'raster') { dxf = dxfDoc(false, X); const { bytes } = await rasterPngBytes(X); extras.push({ name: base + '_engrave.png', data: bytes }); }
+  else dxf = dxfDoc(true, X);
+  const sheets = [{ name: base, svg: svgDoc(true, X), dxf }];
+  if (k !== 'none') sheets.push({ name: base + '_cut_only', svg: svgDoc(false, X), dxf: dxfDoc(false, X) });
+  const params = [['Pieces', `${p.R} × ${p.C} = ${p.R * p.C}`], ['Approx. piece size', `${(p.W / p.C).toFixed(1)} × ${(p.H / p.R).toFixed(1)} mm`],
+    ['Engraving', { none: 'none (cut lines only)', raster: 'raster image (PNG; embedded in SVG and AI)', vec: 'auto-vectorised image', svgvec: 'vector SVG image' }[k]]]
+    .concat(CWMPack.formParams([...document.querySelectorAll('main section:not(#previewCard)')], 'input[type=file]'));
+  const pk = await CWMPack.build({ base, product: `Jigsaw Puzzle ${p.W}×${p.H} mm, ${p.R * p.C} pieces`, sheets, extras, params,
+    steps: ['Engrave first (ENGRAVE layer' + (k === 'raster' ? ' / the PNG image' : '') + ').', 'Cut CUT_INNER (the piece joints).', 'Cut CUT_OUTER (the outer frame) last.', 'Lightly sand the back and edges; seal or oil if you like.'],
+    notes: ['Every shared joint between two pieces is drawn once, so the laser never cuts the same line twice.', k === 'raster' ? 'DXF cannot hold images: the engraving is in ' + base + '_engrave.png, same size and position as the puzzle (bottom-left corner at 0,0).' : null].filter(Boolean) });
+  download(pk.name, pk.blob);
+}));
+
+})();
+</script>
+<!--CWM_PACK:end-->
 </body>
 </html>
