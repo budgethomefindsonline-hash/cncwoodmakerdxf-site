@@ -992,8 +992,8 @@ function svgDoc(engrave = true, X = S){
     ? `M${n3(r)} 0H${n3(W - r)}A${n3(r)} ${n3(r)} 0 0 1 ${n3(W)} ${n3(r)}V${n3(H - r)}A${n3(r)} ${n3(r)} 0 0 1 ${n3(W - r)} ${n3(H)}H${n3(r)}A${n3(r)} ${n3(r)} 0 0 1 0 ${n3(H - r)}V${n3(r)}A${n3(r)} ${n3(r)} 0 0 1 ${n3(r)} 0Z`
     : `M0 0H${n3(W)}V${n3(H)}H0Z`;
   return `<?xml version="1.0" encoding="UTF-8"?>
-<!-- CNCWoodMakerDXF Puzzle Generator · ${W}×${H} мм · ${P.R}×${P.C} деталей · масштаб 1:1 (1 ед. = 1 мм)
-     Порядок: 1) ENGRAVE  2) CUT_INNER  3) CUT_OUTER -->
+<!-- CNCWoodMakerDXF Puzzle Generator · ${W}×${H} mm · ${P.R}×${P.C} pieces · scale 1:1 (1 unit = 1 mm)
+     Order: 1) ENGRAVE  2) CUT_INNER  3) CUT_OUTER -->
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="${n3(W)}mm" height="${n3(H)}mm" viewBox="0 0 ${n3(W)} ${n3(H)}">
   <defs><clipPath id="puzzleClip"><path d="${outer}"/></clipPath></defs>
   <g id="ENGRAVE" inkscape:groupmode="layer" inkscape:label="ENGRAVE">${eng}</g>

@@ -1203,7 +1203,7 @@ function buildSVG(D, o) { // o: {which, marks, preview, layers:{cut,flex,eng,mar
     lay('ENGRAVE', g.ENGRAVE.concat(imgs), '', show.eng) + lay('CUT_INNER', g.CUT_INNER, `fill="none" stroke="${LAYERS.CUT_INNER}" ${sw}`, show.cut) + lay('FLEX_CUT', g.FLEX_CUT, `fill="none" stroke="${LAYERS.FLEX_CUT}" ${sw}`, show.flex) + lay('CUT_OUTER', g.CUT_OUTER, `fill="none" stroke="${LAYERS.CUT_OUTER}" ${sw}`, show.cut) +
     lay('MARK', g.MARK.concat(o.marks && !o.preview ? [`<g fill="none">${sheetsSvg}</g>`] : []), `fill="none" stroke="${LAYERS.MARK}" ${sw}`, (o.marks || o.preview) && show.mark);
   if (overSvg) { L.docH += 14; }
-  return { svg: `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="${f2(L.docW)}mm" height="${f2(L.docH)}mm" viewBox="0 0 ${f2(L.docW)} ${f2(L.docH)}">\n<!-- CNCWoodMakerDXF Bottle Gift Box · единицы: мм, масштаб 1:1 · порядок: ENGRAVE → CUT_INNER → FLEX_CUT → CUT_OUTER -->\n${body}${overSvg}\n</svg>`, L };
+  return { svg: `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="${f2(L.docW)}mm" height="${f2(L.docH)}mm" viewBox="0 0 ${f2(L.docW)} ${f2(L.docH)}">\n<!-- CNCWoodMakerDXF Bottle Gift Box · units: mm, scale 1:1 · order: ENGRAVE → CUT_INNER → FLEX_CUT → CUT_OUTER -->\n${body}${overSvg}\n</svg>`, L };
 }
 function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
 

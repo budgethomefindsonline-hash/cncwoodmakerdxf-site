@@ -1484,8 +1484,8 @@ function sheetSVG(sheet, opts) {
   var o = [];
   o.push('<?xml version="1.0" encoding="UTF-8"?>');
   o.push('<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="' + f3(sheet.w) + 'mm" height="' + f3(sheet.h) + 'mm" viewBox="0 0 ' + f3(sheet.w) + ' ' + f3(sheet.h) + '">');
-  o.push('<title>' + esc(opts.title || 'CNCWoodMakerDXF Ring Box') + '</title>');
-  o.push('<desc>' + esc((opts.desc || '') + ' Масштаб 1:1, единицы мм.') + '</desc>');
+  o.push('<title>' + esc(ringLbl(opts.title || 'CNCWoodMakerDXF Ring Box')) + '</title>');
+  o.push('<desc>' + esc(ringLbl((opts.desc || '') + ' Масштаб 1:1, единицы мм.')) + '</desc>');
   function layer(name, inner, attrs) { o.push('<g id="' + name + '" inkscape:groupmode="layer" inkscape:label="' + name + '" ' + attrs + '>'); inner(); o.push('</g>'); }
   layer('ENGRAVE_FILL', function () {
     pr.ENGRAVE_FILL.forEach(function (g) { o.push('<path fill-rule="evenodd" d="' + g.group.map(function (pl) { return polyD(pl); }).join('') + '"/>'); });
@@ -1499,7 +1499,7 @@ function sheetSVG(sheet, opts) {
   if (!noMark) layer('MARK', function () {
     pr.MARK.forEach(function (m) {
       if (m.rect) o.push('<rect x="' + f3(m.rect[0]) + '" y="' + f3(m.rect[1]) + '" width="' + f3(m.rect[2] - m.rect[0]) + '" height="' + f3(m.rect[3] - m.rect[1]) + '" fill="none" stroke="#FF00FF" stroke-width="0.1" stroke-dasharray="2 2"/>');
-      else if (m.text) o.push('<text x="' + f3(m.x) + '" y="' + f3(m.y) + '" font-size="' + f3(m.size) + '" font-family="Arial, sans-serif" text-anchor="middle" dominant-baseline="middle" fill="#FF00FF" stroke="none">' + esc(m.text) + '</text>');
+      else if (m.text) o.push('<text x="' + f3(m.x) + '" y="' + f3(m.y) + '" font-size="' + f3(m.size) + '" font-family="Arial, sans-serif" text-anchor="middle" dominant-baseline="middle" fill="#FF00FF" stroke="none">' + esc(ringLbl(m.text)) + '</text>');
       else if (m.poly) o.push('<path d="' + polyD(m.poly, m.open) + '" fill="none" stroke="#FF00FF" stroke-width="0.1"/>');
     });
   }, 'opacity="0.9"');
@@ -1526,7 +1526,7 @@ function dxfDoc(sheet, layersUsed, entities) {
       g(0, 'POLYLINE'); g(8, e.layer); g(66, 1); g(10, 0); g(20, 0); g(30, 0); g(70, e.open ? 0 : 1);
       e.poly.forEach(function (q) { g(0, 'VERTEX'); g(8, e.layer); g(10, f3(q[0])); g(20, f3(H - q[1])); g(30, 0); });
       g(0, 'SEQEND'); g(8, e.layer);
-    } else if (e.text) { g(0, 'TEXT'); g(8, e.layer); g(10, f3(e.x)); g(20, f3(H - e.y)); g(30, 0); g(40, f3(e.size)); g(1, translit(e.text.replace(/[\r\n]+/g, ' '))); g(72, 1); g(11, f3(e.x)); g(21, f3(H - e.y)); g(31, 0); }
+    } else if (e.text) { g(0, 'TEXT'); g(8, e.layer); g(10, f3(e.x)); g(20, f3(H - e.y)); g(30, 0); g(40, f3(e.size)); g(1, translit(ringLbl(e.text).replace(/[\r\n]+/g, ' '))); g(72, 1); g(11, f3(e.x)); g(21, f3(H - e.y)); g(31, 0); }
   });
   g(0, 'ENDSEC'); g(0, 'EOF');
   return o.join('\r\n') + '\r\n';
@@ -1555,6 +1555,34 @@ function sheetDXF(sheet, opts) {
 }
 
 var TR = {'а':'a','б':'b','в':'v','г':'g','д':'d','е':'e','ё':'e','ж':'zh','з':'z','и':'i','й':'y','к':'k','л':'l','м':'m','н':'n','о':'o','п':'p','р':'r','с':'s','т':'t','у':'u','ф':'f','х':'h','ц':'ts','ч':'ch','ш':'sh','щ':'sch','ъ':'','ы':'y','ь':'','э':'e','ю':'yu','я':'ya','×':'x','–':'-','—':'-','…':'...','«':'"','»':'"','≤':'<=','≥':'>=','°':'deg','Ø':'D'};
+/* labels drawn in the files: English unless the site is in Russian */
+var RING_LBL_PH = [
+  [/^МАТЕРИАЛ: ПОРОЛОН (\S+) мм — НЕ ФАНЕРА$/, 'MATERIAL: FOAM $1 mm – NOT PLYWOOD'],
+  [/^МАТЕРИАЛ: БАРХАТ — выкройка \(подгиб (\S+) мм\)$/, 'MATERIAL: VELVET – pattern ($1 mm fold-over)'],
+  [/^Вставка (\S+) мм, прорези (\S+) мм \(проверить\)$/, 'Insert $1 mm, slits $2 mm (check)'],
+  [/^Проба паз (.*)$/, 'Test slot $1'], [/^Проба шип (.*)$/, 'Test tab $1'], [/^Проба рамки зазор (.*)$/, 'Test frame gap $1'],
+  [/^Проба: проём \(как внутри коробки\)$/, 'Test: opening (as inside the box)'], [/^Проба отверстий оси \((.*)$/, 'Test axle holes ($1'],
+  [/^Проба направл\.: губка/, 'Guide test: lip'], [/^Проба направл\.: крышка (.*)$/, 'Guide test: lid $1'], [/^Проба направл\.: нижняя планка/, 'Guide test: bottom rail'],
+  [/^Проба направл\.: основание/, 'Guide test: base'], [/^Проба направл\.: стенка/, 'Guide test: wall'],
+  [/^Проба петли: крышка \(верх = задний край\)$/, 'Hinge test: lid (top = back edge)'], [/^Проба петли: стенка \(верх = верх стенки\)$/, 'Hinge test: wall (top = top of wall)'],
+  [/^Проба скрытой петли — мини-коробка ?(.*)$/, 'Hidden hinge test – mini box $1'], [/^Проба угла — мини-корпус ?(.*)$/, 'Corner test – mini body $1'],
+  [/^Шаблон вставки — ПОРОЛОН\/БАРХАТ, не фанера$/, 'Insert template – FOAM/VELVET, not plywood'], [/^(.*) ?Масштаб 1:1, единицы мм\.$/, function (m, a) { return (a ? ringLbl(a.trim()) + ' ' : ' ') + 'Scale 1:1, units mm.'; }],
+  [/^Дно$/, 'Bottom'], [/^Крышка$/, 'Lid'], [/^Крышка сдвижная$/, 'Sliding lid'], [/^Крышка на петлях$/, 'Hinged lid'],
+  [/^Крышка \(со шипами для щёчек\)$/, 'Lid (with tabs for the cheeks)'], [/^Крышка утопленная \(шипы в щёчки\)$/, 'Recessed lid (tabs into the cheeks)'],
+  [/^Крышка — верхний слой$/, 'Lid – top layer'], [/^Крышка — нижний слой \(ось, паз упора(.*)$/, 'Lid – bottom layer (axle, stop slot$1'],
+  [/^Стенка передняя с выемкой$/, 'Front wall with notch'], [/^Стенка передняя$/, 'Front wall'], [/^Стенка задняя$/, 'Back wall'], [/^Стенка левая$/, 'Left wall'], [/^Стенка правая$/, 'Right wall'],
+  [/^Центрирующая рамка(.*)$/, 'Centring frame$1'], [/^Боковая деталь крышки (.*)$/, 'Lid side piece $1'], [/^Наружная боковина (.*)$/, 'Outer side panel $1'], [/^Щёчка крышки (.*)$/, 'Lid cheek $1'],
+  [/^Направляющая верхняя \(губка\)$/, 'Top guide (lip)'], [/^Направляющая нижняя$/, 'Bottom guide'], [/^Ручка-планка$/, 'Handle strip'], [/^Блок магнита корпуса, слой (.*)$/, 'Body magnet block, layer $1'], [/^Шайба(.*)$/, 'Washer$1']
+];
+var RING_LBL_W = { 'Проба': 'Test', 'проба': 'test', 'крышка': 'lid', 'Крышка': 'Lid', 'стенка': 'wall', 'Стенка': 'Wall', 'дно': 'bottom', 'рамка': 'frame', 'петли': 'hinge', 'угла': 'corner', 'ось': 'axle', 'оси': 'axle', 'паз': 'slot', 'шип': 'tab', 'зазор': 'gap', 'слой': 'layer', 'верх': 'top', 'низ': 'bottom', 'мм': 'mm', 'и': 'and', 'с': 'with', 'для': 'for', 'без': 'without', 'на': 'on', 'в': 'in' };
+function ringLbl(t) {
+  var L = 'en'; try { L = (typeof LANG !== 'undefined' && LANG) || localStorage.getItem('cncwm_lang') || document.documentElement.lang || 'en'; } catch (e) { L = document.documentElement.lang || 'en'; }
+  if (L === 'ru' || !t || !/[А-яЁё]/.test(t)) return t;
+  var s = String(t);
+  try { if (window.CWM_T) { var x = window.CWM_T(s, 'en'); if (x && x !== s && !/[А-яЁё]/.test(x)) return x; } } catch (e) { }
+  for (var i = 0; i < RING_LBL_PH.length; i++) if (RING_LBL_PH[i][0].test(s)) return s.replace(RING_LBL_PH[i][0], RING_LBL_PH[i][1]);
+  return translit(s.replace(/[А-яЁё]+/g, function (w) { return RING_LBL_W[w] || w; }).replace(/—/g, '-').replace(/×/g, 'x'));
+}
 function translit(s) { return String(s).split('').map(function (c) { var l = c.toLowerCase(), t = TR[l]; if (t === undefined) return c.charCodeAt(0) < 128 ? c : '?'; return c !== l && t ? t[0].toUpperCase() + t.slice(1) : t; }).join(''); }
 /* разбор DXF для самопроверки */
 function parseDXF(text) {
