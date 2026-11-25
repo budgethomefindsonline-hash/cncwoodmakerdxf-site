@@ -2486,7 +2486,7 @@ SB.buildParts = function (M, engr, img) {
     ring.name = `Inel superior cu inel central și ${M.div.N} brațe (o singură piesă)`;
     ring.label = 'INEL + BRATE';
     ring.labelAt = [0, -(I.rh + I.rw / 2)]; ring.labelH = Math.max(1.8, Math.min(3.5, I.rw * 0.45));
-    const txt = [['PASTRATI DISCUL', 2.6], ['PENTRU CAPAC', 2.6]].flatMap(([s2, hh], i) => SB.strokeText(s2, 0, (i ? -hh - 1.5 : 1.5), hh, true));
+    const txt = [['PASTRATI DISCUL', 2.6], ['PENTRU CAPAC', 2.6]].flatMap(([s2, hh], i) => SB.strokeText(SB.lbl(s2), 0, (i ? -hh - 1.5 : 1.5), hh, true));
     if (txt.length && Math.max(...txt.flat().map(q => Math.hypot(q[0], q[1]))) < I.rh - 1.5) ring.markLines = txt;
   }
   const lid = { id: 'lid', name: 'Capac', label: 'CAPAC', outer: [outerOff], inner: [], slits: [], fill: [], line: [], marks: merged ? [circlePts(M.div.ins.discD / 2, 120)] : [M.frameO.pts, M.frameI.pts] };
@@ -2793,7 +2793,7 @@ SB.sheetEntities = function (sheet, p, labelFn) {
   ents.forEach(e => { delete e._i; });
   // conturul paginii (pagina se adaptează pieselor) și etichetele blocurilor — doar MARK, nu se taie
   ents.push({ layer: 'MARK', pts: [[0, 0], [sheet.w, 0], [sheet.w, sheet.h], [0, sheet.h]], closed: true, part: 'sheet' });
-  (sheet.blocks || []).forEach(B => { if (B.label) SB.strokeText(B.label, B.x, sheet.h - B.yTop - 4.5, 3.5, false).forEach(l => ents.push({ layer: 'MARK', pts: l, closed: false, part: 'sheet' })); });
+  (sheet.blocks || []).forEach(B => { if (B.label) SB.strokeText(SB.lbl(B.label), B.x, sheet.h - B.yTop - 4.5, 3.5, false).forEach(l => ents.push({ layer: 'MARK', pts: l, closed: false, part: 'sheet' })); });
   return ents;
 };
 const n4 = v => (Math.abs(v) < 5e-5 ? 0 : v).toFixed(4);
@@ -3259,10 +3259,19 @@ SB.strokeText = function (text, x, y, h, center) {
 /* ------------------------------------------------------------------ */
 /* Pachet export complet                                                */
 /* ------------------------------------------------------------------ */
+SB.uiLang = function () { try { if (typeof LANG !== 'undefined' && LANG) return LANG; } catch (e) { } try { return localStorage.getItem('cncwm_lang') || 'en'; } catch (e) { return 'en'; } };
+SB.LBL_PHRASE = { 'INEL + RAMA PLINA': 'RING + SOLID FRAME', 'INEL + RAMA': 'RING + FRAME', 'INEL + BRATE': 'RING + ARMS', 'RAMA PLINA': 'SOLID FRAME', 'RAMA SUS': 'TOP FRAME', 'D PROBA': 'TEST D', 'SEG BAZA': 'BASE SEG', 'SEG INEL': 'RING SEG', 'PASTRATI DISCUL': 'KEEP THE DISC', 'PENTRU CAPAC': 'FOR THE LID' };
+SB.LBL_WORD = { BAZA: 'BASE', CAPAC: 'LID', INEL: 'RING', BRATE: 'ARMS', RAMA: 'FRAME', PLINA: 'SOLID', PROBA: 'TEST', SABLON: 'TEMPLATE', VARF: 'TIP', VALE: 'VALLEY', STIFT: 'PEG', FANTE: 'SLOTS', BRAT: 'ARM', CERC: 'CIRCLE', DESP: 'DIVIDER', SUS: 'TOP', STEA: 'STAR', PAGINA: 'SHEET', SCARA: 'SCALE', MARGINE: 'MARGIN', DIST: 'GAP' };
+SB.lbl = function (t) {
+  if (!t || SB.uiLang() === 'ro') return t;
+  const k = String(t).trim(); if (SB.LBL_PHRASE[k]) return SB.LBL_PHRASE[k];
+  if (/^PROBA [A-Z]$/.test(k)) return 'TEST ' + k.slice(-1);
+  return String(t).split(' ').map(w => SB.LBL_WORD[w] || w).join(' ');
+};
 SB.partLabels = function (pt) {
-  if (pt.labelAt) { const h2 = pt.labelH || 3.5; return SB.strokeText(pt.label, pt.labelAt[0], pt.labelAt[1] - h2 / 2, h2, true).map(l => ({ layer: 'MARK', pts: l, closed: false, part: pt.id })); }
+  if (pt.labelAt) { const h2 = pt.labelH || 3.5; return SB.strokeText(SB.lbl(pt.label), pt.labelAt[0], pt.labelAt[1] - h2 / 2, h2, true).map(l => ({ layer: 'MARK', pts: l, closed: false, part: pt.id })); }
   const h = Math.max(2.5, Math.min(6, pt.bb.h * 0.08));
-  return SB.strokeText(pt.label, (pt.bb.x0 + pt.bb.x1) / 2, (pt.bb.y0 + pt.bb.y1) / 2 - h / 2, h, true).map(l => ({ layer: 'MARK', pts: l, closed: false, part: pt.id }));
+  return SB.strokeText(SB.lbl(pt.label), (pt.bb.x0 + pt.bb.x1) / 2, (pt.bb.y0 + pt.bb.y1) / 2 - h / 2, h, true).map(l => ({ layer: 'MARK', pts: l, closed: false, part: pt.id }));
 };
 SB.baseName = function (p) {
   const n = v => String(+v.toFixed(2));
@@ -3303,7 +3312,7 @@ SB.exportAll = function (M, engr, img, opts) {
   const base = SB.baseName(p);
   const mk = (sh, kind) => {
     let ents = SB.sheetEntities(sh, p, SB.partLabels);
-    SB.strokeText(SB.sheetInfoText(p, sh), p.sheetMargin + 1, 1.2, 2.5, false).forEach(l => ents.push({ layer: 'MARK', pts: l, closed: false, part: 'sheet' }));
+    SB.strokeText(SB.lbl(SB.sheetInfoText(p, sh)), p.sheetMargin + 1, 1.2, 2.5, false).forEach(l => ents.push({ layer: 'MARK', pts: l, closed: false, part: 'sheet' }));
     if (opts.noMark) ents = ents.filter(e => e.layer !== 'MARK');
     const tag = kind === 'probe' ? 'probe' : 'toate_piesele';
     const svg = SB.toSVG(sh, ents, p, `${base} ${tag}`);
@@ -5168,19 +5177,109 @@ async function aiFor(s) {
   return SB.toAI(s.sheet, s.ents, M.p, s.name, rs);
 }
 async function exportZip(ex) {
-  const p = M.p, base = SB.baseName(p), sfx = ex.noMark ? '_fara_MARK' : '';
+  const p = M.p, base = SB.baseName(p), RO = SB.uiLang() === 'ro', sfx = ex.noMark ? (RO ? '_fara_MARK' : '_no_MARK') : '';
+  const fn = n => RO ? n : enFileName(n);
   const files = [];
   for (const f of ex.files) {
     let data = f.data;
     if (/\.ai$/.test(f.name)) { const sh = ex.sheets.find(s2 => s2.name + '.ai' === f.name); if (sh) data = await aiFor(sh); }
-    files.push({ name: base + '/' + f.name.replace(/\.(svg|dxf|ai)$/, sfx + '.$1'), data });
+    if (!RO && /_capac_gravura_pozitie\.txt$/.test(f.name)) data = decDot(positionTextEN(ex));
+    files.push({ name: base + '/' + fn(f.name).replace(/\.(svg|dxf|ai)$/, sfx + '.$1'), data });
   }
-  files.push({ name: base + '/LICENTA.txt', data: licenseNow().replace(/\n/g, '\r\n') });
-  files.push({ name: base + '/README_RO.txt', data: readmeText(ex) });
+  files.push({ name: base + '/' + (RO ? 'LICENTA.txt' : 'LICENSE.txt'), data: licenseNow().replace(/\n/g, '\r\n') });
+  files.push(RO ? { name: base + '/README_RO.txt', data: readmeText(ex) } : { name: base + '/README.txt', data: '\ufeff' + decDot(readmeTextEN(ex, sfx)) });
   files.push({ name: base + '/' + base + '.starbox.json', data: SB.serializeProject(SB.normalize(raw).p) });
   const name = base + sfx + '.zip';
   download(name, new Blob([SB.makeZip(files)], { type: 'application/zip' }));
   return { name, count: files.length, list: files.map(f => f.name.slice(base.length + 1)).join(', ') };
+}
+/* ---------------- English README (UI in English / Russian) ---------------- */
+function decDot(t) { return String(t).replace(/(\d),(\d)/g, '$1.$2'); }
+function enFileName(n) { return String(n).replace('_capac_gravura_pozitie', '_lid_engraving_position').replace('_capac_gravura', '_lid_engraving').replace('_toate_piesele', '_all_parts').replace(/_probe(?=[._]|$)/, '_test_pieces'); }
+function partNameEN(n) {
+  const M2 = { 'Bază': 'Base', 'Capac': 'Lid', 'Inel superior': 'Top ring', 'Braț stea de probă': 'Test star arm', 'Despărțitor de probă': 'Test divider', 'Probă disc capac (placajul cutiei)': 'Lid disc test (box plywood)', 'Probă perete central': 'Central wall test', 'Probă știft–fantă': 'Tab–slot fit test', 'Șablon îndoire cerc': 'Circle bending template', 'Știft de probă': 'Test peg', 'Perete central circular': 'Circular central wall', 'Stea centrală (despărțitoare)': 'Central star (dividers)', 'Ramă sus compartimente': 'Compartment top frame', 'Ramă de centrare': 'Centring frame', 'Ramă de centrare plină (disc lipit în centru)': 'Solid centring frame (disc glued in the centre)', 'Inel superior cu inel central și 5 brațe (o singură piesă)': 'Top ring with centre ring and 5 arms (one piece)' };
+  if (M2[n]) return M2[n];
+  return String(n).replace(/^Fâșie perete (\d+)\/(\d+)$/, 'Wall strip $1/$2').replace(/^Despărțitor (\d+)\/(\d+)$/, 'Divider $1/$2').replace(/^Probă îmbinare (\w)$/, 'Joint test $1')
+    .replace(/^Probă vârf — perete real$/, 'Tip test – real wall').replace(/^Probă vale — perete real$/, 'Valley test – real wall').replace(/^Probă fante despărțitor$/, 'Divider slot test')
+    .replace(/^Segment bază — (vârf|vale)$/, (m, k) => 'Base segment – ' + (k === 'vârf' ? 'tip' : 'valley')).replace(/^Segment inel — (vârf|vale)$/, (m, k) => 'Ring segment – ' + (k === 'vârf' ? 'tip' : 'valley'))
+    .replace(/^Șablon îndoire (vârf|vale)$/, (m, k) => (k === 'vârf' ? 'Tip' : 'Valley') + ' bending template').replace(/^Inel superior cu inel central și (\d+) brațe \(o singură piesă\)$/, 'Top ring with centre ring and $1 arms (one piece)');
+}
+function positionTextEN(ex) {
+  const img = (SB.normalize(raw).p || {}).img || {}, lid = ex.sheets.find(sh => sh.sheet.parts.some(pt => pt.image));
+  const im = lid ? lid.sheet.parts.find(pt => pt.image).image : null, base = SB.baseName(M.p), f2 = (v, d) => SB.fmt(v, d);
+  const info = ex.imageInfo || [];
+  const dims = info.find(t => /^Dimensiune/.test(t)) || '', ctr = info.find(t => /^Centru față/.test(t)) || '', file = info.find(t => /^Fișier/.test(t)) || '';
+  const L = [`Lid engraving — ${img.name || 'image'}`,
+    `File: ${enFileName(base + '_capac_gravura.png')}${(file.match(/\(([^)]*)\)/) || [])[1] ? ' (' + file.match(/\(([^)]*)\)/)[1].replace('la mărimea finală', 'at final size') + ')' : ''}`,
+    dims.replace('Dimensiune:', 'Size:').replace('rotație', 'rotation').replace('(sens trigonometric)', '(counter-clockwise)'),
+    ctr.replace('Centru față de centrul stelei:', 'Centre relative to the star centre:'),
+    im && lid ? `Centre on sheet ${enFileName(lid.name)} (DXF coordinates, origin bottom-left): X ${f2(im.cx, 3)} mm, Y ${f2(im.cy, 3)} mm` : '',
+    `Mode: ${img.mode === 'bw' ? 'black & white, threshold ' + img.threshold : img.mode === 'gray' ? 'greyscale' : 'SVG vector'}${img.invert ? ', inverted' : ''}`,
+    'Layer: ENGRAVE_IMAGE (engrave only). Do not cut this layer.'];
+  return L.filter(Boolean).join('\r\n');
+}
+function guideStepsEN() {
+  const s = ['Cut the test sheet first: check the tab–slot fit (pick the slot that holds firmly), the bend at a tip and in a valley on the templates, and joint A+B.',
+    'On the part sheets cut CUT_INNER before CUT_OUTER. The MARK layer is not cut.',
+    'Gently pre-bend each strip by hand in the slotted zones before assembly.',
+    'Push the bottom tabs of the first strip into the base slots, starting at a joint. Follow the star outline, bending the wall at the tips and valleys.',
+    'Continue with the next strip: the fingers interlock at the joint (F1, F2, F3 in order along the outline). Glue the fingers with a little wood glue.',
+    'The last strip closes onto the first. Check that every tab is fully in its slot.',
+    'Fit the top ring: the top tabs go into the ring slots. Glue the ring and the base if you want a rigid box.',
+    'Glue the centring frame under the lid on the marked (MARK) outline – centred, engraved side up.',
+    'Put the lid on: the frame drops into the ring opening with the chosen clearance. Let the glue dry.'];
+  const D = M && M.div;
+  if (D && D.mode !== 'none' && D.items) {
+    const add = D.circle ? [
+      'Dividers: bend the central CIRCLE wall (slots facing out) and close it with the fingers at its ends (a little glue). Use the "CIRCLE TEMPLATE" test piece as a form.',
+      `Push the tenon of each divider D1…D${D.N} from the outside into the mortise with the same number in the circle. The tenon must reach the inner face of the circle.`,
+      `Lower the whole assembly (circle + dividers) into the base: the tabs go into the slots marked C (circle) and 1…${D.N} (dividers).`,
+    ] : [
+      `Dividers: hold the STAR flat and push each divider D1…D${D.N} towards the centre, with the notch at its inner end over the arm with the same number.`,
+      `Lower the assembly (star + dividers) into the base: the tabs go into the slots marked 1…${D.N}.`,
+    ];
+    if (D.ins) {
+      const I = D.ins;
+      add.push(`Keep the disc that falls out of the centre hole of the top ring RING + ARMS (marked "KEEP THE DISC FOR THE LID"): it centres the lid. Disc Ø ${fmt(I.discD, 2)} mm, hole Ø ${fmt(I.holeD, 2)} mm, clearance ${fmt(I.gapRad, 2)} mm per side.`);
+      s.splice(6, 1, `Fit RING + ARMS on the wall like a normal ring: the top tabs of the wall go into the slots with the same numbers. The centre ring covers the circle and the arms cover the dividers (which reach ${fmt(I.zBottom, 1)} mm, ${fmt(I.c, 1)} mm below the ring).`);
+      s.splice(7, 2, 'Glue the disc in the centre under the lid: put the disc in the centre hole of the ring, glue on its top face, then place the lid exactly on the ring outline and press. The marked circle (MARK) on the lid shows the position. There is no centring frame under the lid.',
+        `Close the lid: it sits directly on the ring and the disc sits in the centre hole (${fmt(I.e, 1)} mm, full thickness), stopping it from sliding. If the disc is too tight, lightly sand its edge.`);
+    } else add.push(`Fit the TOP FRAME over the dividers${D.circle ? ' and the circle' : ''}: the top tabs go into its slots with the same numbers. The frame stays ${fmt(D.topClear, 1)} mm below the ring, so the lid closes normally.`);
+    s.splice(6, 0, ...add);
+  }
+  return s;
+}
+function readmeTextEN(ex, sfx) {
+  const p = M.p, L = [], base = SB.baseName(p), nm = n => enFileName(n) + (sfx || '');
+  L.push('CNCWoodMakerDXF — Star Box', '='.repeat(26), '');
+  L.push(`Star: ${fmt(M.Wout, 2)} × ${fmt(M.Hout, 2)} mm (outline width × height)`);
+  L.push(`Inside wall height: ${fmt(p.H)} mm · plywood ${fmt(p.t)} mm · closed box ${fmt(M.closedHeight, 2)} mm`);
+  L.push(`Wall: ${p.strips} equal strip(s), working length ${fmt(M.Lw, 3)} mm, size ${fmt(M.Lw + p.fingerLen, 2)} × ${fmt(p.H + 2 * p.t, 2)} mm`);
+  L.push(`Tabs: ${M.tabs.length} on each edge · slots ${fmt(p.tabW + p.tabGap, 2)} × ${fmt(p.t + p.tabGap, 2)} mm`);
+  if (M.asCut) L.push(`Real clearance after cutting (kerf ${fmt(p.kerf)} mm): bottom ${fmt(M.asCut.fit.bot, 3)} mm, top ${fmt(M.asCut.fit.top, 3)} mm`);
+  if (M.div && M.div.items) L.push(`Dividers: ${M.div.circle ? 'circular central wall + ' : ''}${M.div.N} dividers`);
+  L.push(`Kerf: ${fmt(p.kerf)} mm · compensated in the files: ${p.kerfComp ? 'YES – do NOT apply it again in LightBurn' : 'NO (set an offset in LightBurn if you want)'}`);
+  L.push(`MARK layer: ${ex.noMark ? 'NOT included (production-only files)' : 'included (sheet outline, labels) – do not cut'}`);
+  L.push('', 'Units: millimetres, scale 1:1. Files are not scaled.', 'All parts are on one page (the page grows to fit the parts); arrange them on your laser bed in LightBurn.' + (M.div && !M.div.sameMat ? ` The dividers (plywood ${fmt(M.div.T)} mm) are grouped separately on the same page.` : ''), '');
+  L.push('Layers (same names and colours in SVG, DXF and AI):', '  CUT_INNER (blue) – holes, slots, flex slits – cut FIRST', '  CUT_OUTER (red) – outer contours – cut LAST', '  ENGRAVE_FILL (black) – fill engraving (text)', '  ENGRAVE_LINE (green) – line engraving (snowflake, test labels)', '  ENGRAVE_IMAGE – the image on the lid (engrave only)', '  MARK (cyan) – sheet outline, labels, positions: do NOT cut', '');
+  if (M.div && M.div.ins) { const I = M.div.ins; L.push(`TOP RING WITH ARMS + DISC: the top ring (RING + ARMS) is one piece: the outline and tab slots of the normal ring + ${M.div.N} cut-outs + the centre hole; all holes are cut before the outer outline. There is no separate top frame and no centring frame under the lid. KEEP THE DISC from the centre hole (Ø ${fmt(I.discD, 2)} mm; hole Ø ${fmt(I.holeD, 2)} mm; ${fmt(I.gapRad, 2)} mm clearance per side, same kerf) and glue it in the centre under the lid (the MARK circle on the lid).`, ''); }
+  if (M.frameNest && M.frameNest.nested) L.push('The centring frame is cut inside the ring opening (same size, lid clearance kept). Cut order: (frame hole →) frame outline → ring opening (all CUT_INNER) → ring outer outline (CUT_OUTER). In LightBurn cut CUT_INNER before CUT_OUTER and keep "Cut inner shapes first" on.', '');
+  L.push('Layer names do NOT set the laser mode: check Line/Fill/Image, power and speed for every layer in LightBurn.', '');
+  L.push('Files:');
+  ex.sheets.forEach(s => L.push(`  ${nm(s.name)}.svg / .dxf / .ai – ${s.sheet.parts.map(x => partNameEN(x.name)).join(', ')}`));
+  if ((ex.files || []).some(f => /_capac_gravura\.png$/.test(f.name))) L.push(`  ${enFileName(base + '_capac_gravura.png')} – lid engraving image (for DXF users)`, `  ${enFileName(base + '_capac_gravura_pozitie.txt')} – where to place the lid image`);
+  L.push('  LICENSE.txt – terms of use', `  ${base}.starbox.json – project file (re-open it in the Star Box Generator)`, '', 'Formats: SVG (LightBurn, Inkscape – image embedded), DXF (CAD/CNC; the image is a separate PNG), AI (Adobe Illustrator, PDF-compatible; also opens in LightBurn, CorelDRAW, Inkscape). All 1:1 in mm with the same layers and colours.');
+  const img = (SB.normalize(raw).p || {}).img;
+  if (ex.imageReport && ex.imageReport.length && img) {
+    const lid = ex.sheets.find(sh => sh.sheet.parts.some(pt => pt.image)), ln = lid ? nm(lid.name) : '';
+    L.push('', 'Image on the lid:', `  SVG (${ln}.svg): ${img.svgInner ? 'the SVG drawing embedded as vectors' : 'the PNG image embedded (no external link)'} on the ENGRAVE_IMAGE layer.`);
+    L.push(img.dxfMode === 'trace' ? `  DXF (${ln}.dxf): the traced image contours are on the ENGRAVE_IMAGE layer (fill engraving, not cutting).` : `  DXF (${ln}.dxf): the image is NOT in the DXF (DXF cannot hold raster images). It comes separately as ${enFileName(base + '_capac_gravura.png')}, with its position in ${enFileName(base + '_capac_gravura_pozitie.txt')}${ex.noMark ? '' : ' and a rectangle on the MARK layer'}.`);
+    L.push('  AI: the image is embedded.', '  The laser mode (Fill / Image, power, speed) is NOT set by the layer name – check it in LightBurn before engraving.');
+  }
+  L.push('', 'Assembly:');
+  guideStepsEN().forEach((t, i) => L.push(`  ${i + 1}. ${t}`));
+  L.push('', 'Cut the test sheet first. The box is not physically verified by the generator: confirm by cutting and assembling it.', '', 'Questions? Etsy: CNCWoodMakerDXF · cncwoodmakerdxf.com · Instagram @cncwoodmaker · TikTok @cnc.wood.maker');
+  return L.join('\r\n');
 }
 function readmeText(ex) {
   const p = M.p;
