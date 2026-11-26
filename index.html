@@ -144,6 +144,25 @@ details p{color:var(--muted);margin-top:10px;max-width:720px}
 .band{background:linear-gradient(120deg,var(--dark),#2c3b30);color:#fff;border-radius:20px;padding:44px;display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:22px}
 .band p{color:#c9c3b8}
 
+/* forms */
+.nl{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;max-width:460px}
+.nl input[type=email]{flex:1;min-width:200px;padding:13px 16px;border-radius:999px;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.08);color:#fff;font:inherit}
+.nl input::placeholder{color:#b8b1a5}
+.small{font-size:.78rem;color:#a9a397;margin-top:8px}.small a{text-decoration:underline}
+.hp{position:absolute;left:-9999px}
+.share{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:30px;display:grid;gap:14px;max-width:640px}
+.share label{font-weight:600;font-size:.88rem;display:grid;gap:6px}
+.share input[type=text],.share input[type=email],.share textarea{padding:12px 14px;border:1px solid var(--line);border-radius:10px;font:inherit;background:#fffdf9}
+.share .chk{display:flex;gap:10px;align-items:flex-start;font-weight:400;color:var(--muted)}
+.share .chk input{margin-top:5px}
+.cgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:34px}
+@media(max-width:1000px){.cgrid{grid-template-columns:repeat(2,1fr)}}
+.cgrid figure{background:var(--card);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow)}
+.cgrid img{aspect-ratio:1;object-fit:cover;width:100%}
+.cgrid figcaption{padding:10px 12px;font-size:.85rem;color:var(--muted)}
+.cgrid figcaption b{color:var(--ink);display:block}
+.cgrid:empty{display:none}
+.cempty{color:var(--muted);font-style:italic;margin-bottom:24px}
 footer{background:var(--dark2);color:#a9a397;padding:56px 0 28px;font-size:.9rem}
 .fgrid{display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr;gap:30px}
 @media(max-width:760px){.fgrid{grid-template-columns:1fr 1fr}}
@@ -169,6 +188,7 @@ footer a:hover{color:var(--gold)}
       <a href="#generators">Generators</a>
       <a href="#catalog">Catalog</a>
       <a href="#handmade">Handmade</a>
+      <a href="#community">Community</a>
       <a href="#about">About</a>
       <a href="#faq">FAQ</a>
     </nav>
@@ -273,6 +293,29 @@ footer a:hover{color:var(--gold)}
   </div>
 </section>
 
+<!-- COMMUNITY -->
+<section id="community" style="padding-top:0">
+  <div class="wrap">
+    <span class="eyebrow">Made by our community</span>
+    <h2>Your builds</h2>
+    <p class="sub">Made something with my files or generators? Send a photo. I check every photo, and the best ones appear here and on my TikTok and Instagram.</p>
+    <div class="cgrid" id="comGrid"></div>
+    <p class="cempty" id="comEmpty">No builds yet. Yours could be the first!</p>
+    <form class="share" name="community" method="POST" action="/thanks.html" enctype="multipart/form-data" data-netlify="true" netlify-honeypot="company">
+      <input type="hidden" name="form-name" value="community">
+      <p class="hp"><label>Leave empty <input name="company"></label></p>
+      <label>Your name or nickname<input type="text" name="nickname" required maxlength="60"></label>
+      <label>Email (not shown on the site)<input type="email" name="email" required></label>
+      <label>What did you make?<input type="text" name="project" maxlength="120" placeholder="e.g. Ring box, 3 mm birch plywood"></label>
+      <label>Photo (JPG or PNG, max 8 MB)<input type="file" name="photo" accept="image/jpeg,image/png,image/webp" required id="comPhoto"></label>
+      <label>Anything else? (optional)<textarea name="message" rows="3" maxlength="600"></textarea></label>
+      <label class="chk"><input type="checkbox" name="consent" value="yes" required> I made this, and CNCWoodMakerDXF may show the photo with my name on this website and on social media.</label>
+      <div><button class="btn btn-dark" type="submit">Send my build</button></div>
+      <p class="small" style="color:var(--muted);margin:0">See the <a href="/privacy.html">privacy notice</a>.</p>
+    </form>
+  </div>
+</section>
+
 <!-- ABOUT -->
 <section id="about" style="padding-top:0">
   <div class="wrap about">
@@ -293,7 +336,14 @@ footer a:hover{color:var(--gold)}
     <div class="band">
       <div>
         <h2 style="font-size:2rem">New generators every month</h2>
-        <p>Follow along for new designs, free files and launch days.</p>
+        <p>Get one short email when a new generator or design launches. No spam, unsubscribe any time.</p>
+        <form class="nl" name="newsletter" method="POST" action="/thanks.html" data-netlify="true" netlify-honeypot="company">
+          <input type="hidden" name="form-name" value="newsletter">
+          <p class="hp"><label>Leave empty <input name="company"></label></p>
+          <input type="email" name="email" required placeholder="your@email.com" aria-label="Email address">
+          <button class="btn btn-gold" type="submit">Notify me</button>
+        </form>
+        <p class="small">I only use your email for these updates. <a href="/privacy.html">Privacy</a></p>
       </div>
       <div style="display:flex;gap:10px;flex-wrap:wrap">
         <a class="btn btn-gold" href="https://www.tiktok.com/@cnc.wood.maker" target="_blank" rel="noopener">TikTok</a>
@@ -325,7 +375,7 @@ footer a:hover{color:var(--gold)}
         <p>Laser cut files and online box generators, designed in London.</p>
       </div>
       <div><h4>Shop</h4><ul><li><a href="#collection">Bottle boxes</a></li><li><a href="#catalog">Catalog</a></li><li><a href="#handmade">Handmade</a></li></ul></div>
-      <div><h4>Tools</h4><ul><li><a href="/guide/bottle-gift-box-generator">Bottle box generator</a></li><li><a href="/guide/drawer-organizer-generator">Drawer organizer generator</a></li><li><a href="/guide/jigsaw-puzzle-generator">Jigsaw puzzle generator</a></li><li><a href="/guide/santa-box-generator">Santa box generator</a></li><li><a href="/guide/star-box-generator">Star box generator</a></li><li><a href="/guide/ring-box-generator">Ring box generator</a></li><li><a href="#generators">All generators</a></li><li><a href="#faq">FAQ</a></li></ul></div>
+      <div><h4>Tools</h4><ul><li><a href="/guide/bottle-gift-box-generator">Bottle box generator</a></li><li><a href="/guide/drawer-organizer-generator">Drawer organizer generator</a></li><li><a href="/guide/jigsaw-puzzle-generator">Jigsaw puzzle generator</a></li><li><a href="/guide/santa-box-generator">Santa box generator</a></li><li><a href="/guide/star-box-generator">Star box generator</a></li><li><a href="/guide/ring-box-generator">Ring box generator</a></li><li><a href="#generators">All generators</a></li><li><a href="#faq">FAQ</a></li><li><a href="#community">Share your build</a></li><li><a href="/privacy.html">Privacy</a></li></ul></div>
       <div><h4>Follow</h4><ul>
         <li><a href="https://www.etsy.com/shop/CNCWoodMakerDXF" target="_blank" rel="noopener">Etsy</a></li>
         <li><a href="https://www.tiktok.com/@cnc.wood.maker" target="_blank" rel="noopener">TikTok</a></li>
@@ -427,6 +477,15 @@ const genCard=x=>`<article class="pcard"><div class="pimg"><span class="badge go
 document.getElementById('collGrid').innerHTML=coll.map(collCard).join('');
 document.getElementById('genGrid').innerHTML=gens.map(genCard).join('');
 document.getElementById('madeGrid').innerHTML=handmade.map(prodCard).join('');
+// ✏️ Approved community photos: put the image in img/c/ and add a line here
+const community=[
+ // {name:"Anna",project:"Ring box, 3 mm birch",img:"c/anna-ring.jpg"}
+];
+if(community.length){document.getElementById('comEmpty').remove();
+ document.getElementById('comGrid').innerHTML=community.map(c=>`<figure><img src="img/${c.img}" alt="${c.project} made by ${c.name}" loading="lazy"><figcaption><b>${c.name}</b>${c.project}</figcaption></figure>`).join('');}
+const cp=document.getElementById('comPhoto');
+cp.addEventListener('change',()=>{const f=cp.files[0];cp.setCustomValidity(f&&f.size>8e6?'The photo is larger than 8 MB. Please choose a smaller one.':'');cp.reportValidity();});
+
 document.getElementById('tabs').innerHTML=cats.map(c=>`<button data-k="${c.k}">${c.n}</button>`).join('');
 document.getElementById('tabs').addEventListener('click',e=>{const b=e.target.closest('button');if(b)filter(b.dataset.k)});
 function filter(k){
